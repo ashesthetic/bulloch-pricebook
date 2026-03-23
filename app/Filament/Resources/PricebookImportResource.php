@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PricebookImportResource\Pages;
+use App\Jobs\ExportPricebookJob;
 use App\Jobs\ImportPricebookJob;
 use App\Models\Pricebook\PricebookImport;
 use Filament\Forms;
@@ -118,6 +119,35 @@ class PricebookImportResource extends Resource
                         Notification::make()
                             ->title('Import queued successfully')
                             ->body("Import #{$import->id} is running in the background.")
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('export')
+                    ->label('Export to File')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->modalHeading('Export Pricebook to XML')
+                    ->modalDescription('This will overwrite the existing XML file with current database data. Continue?')
+                    ->action(function () {
+                        $filePath = env('PRICEBOOK_PATH');
+                        if (empty($filePath)) {
+                            Notification::make()
+                                ->title('PRICEBOOK_PATH is not set in .env')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        if (! str_starts_with($filePath, '/')) {
+                            $filePath = base_path($filePath);
+                        }
+
+                        dispatch(new ExportPricebookJob($filePath));
+
+                        Notification::make()
+                            ->title('Export queued successfully')
+                            ->body('The XML file will be updated in the background.')
                             ->success()
                             ->send();
                     }),

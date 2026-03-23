@@ -34,14 +34,21 @@ class ImportPricebookJob implements ShouldQueue
             $this->truncateTables();
 
             // Stream and import
-            $counts = $this->streamImport($this->filePath, $import);
+            ['counts' => $counts, 'meta' => $meta] = $this->streamImport($this->filePath, $import);
 
             $import->update([
-                'status' => 'completed',
-                'finished_at' => now(),
-                'records_imported' => $counts,
+                'status'             => 'completed',
+                'finished_at'        => now(),
+                'records_imported'   => $counts,
                 'progress_percentage' => 100,
-                'current_section' => null,
+                'current_section'    => null,
+                'bt9000_version'     => $meta['BT9000_Version'] ?? null,
+                'generated_by'       => $meta['Generated_By'] ?? null,
+                'station_id'         => isset($meta['Station_ID']) && $meta['Station_ID'] !== '' ? (int) $meta['Station_ID'] : null,
+                'file_creation_date' => $meta['File_Creation_Date'] ?? null,
+                'file_created_at'    => isset($meta['File_Creation_Date']) && $meta['File_Creation_Date'] !== ''
+                    ? \Carbon\Carbon::createFromFormat('YmdHi', $meta['File_Creation_Date'])->toDateTimeString()
+                    : null,
             ]);
         } catch (\Throwable $e) {
             $import->update([
@@ -105,6 +112,7 @@ class ImportPricebookJob implements ShouldQueue
         $counts = [];
         $currentSection = null;
         $processedRecords = 0;
+        $headerMeta = [];
 
         // Buffers for batch insert (keyed by table name)
         $buffers = [];
@@ -118,6 +126,13 @@ class ImportPricebookJob implements ShouldQueue
             }
 
             $name = $reader->localName;
+
+            // Capture file-level header metadata
+            if (in_array($name, ['BT9000_Version', 'Generated_By', 'Station_ID', 'File_Creation_Date']) && $currentSection === null) {
+                $reader->read(); // move to text node
+                $headerMeta[$name] = $reader->value;
+                continue;
+            }
 
             // Track which section we're in
             if (in_array($name, [
@@ -232,7 +247,7 @@ class ImportPricebookJob implements ShouldQueue
             }
         }
 
-        return $counts;
+        return ['counts' => $counts, 'meta' => $headerMeta];
     }
 
     private function maybeFlush(
