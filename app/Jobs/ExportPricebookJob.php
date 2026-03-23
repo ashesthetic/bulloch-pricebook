@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Pricebook\PricebookExport;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
@@ -15,12 +16,18 @@ class ExportPricebookJob implements ShouldQueue
 
     public function __construct(
         private readonly ?string $outputPath = null,
+        private readonly ?int $exportId = null,
     ) {}
 
     public function handle(): void
     {
         $path = $this->outputPath ?? base_path(config('pricebook.path'));
         $tmp  = $path . '.tmp';
+
+        // Resolve or create the export tracking record
+        $export = $this->exportId
+            ? PricebookExport::findOrFail($this->exportId)
+            : PricebookExport::create(['file_path' => $path, 'started_at' => now(), 'status' => 'running']);
 
         $lastImport = DB::table('pb_imports')
             ->where('status', 'completed')
@@ -34,6 +41,7 @@ class ExportPricebookJob implements ShouldQueue
 
         $fh = fopen($tmp, 'w');
         if ($fh === false) {
+            $export->update(['status' => 'failed', 'finished_at' => now(), 'error_message' => "Cannot open file for writing: {$tmp}"]);
             throw new \RuntimeException("Cannot open file for writing: {$tmp}");
         }
 
@@ -66,11 +74,25 @@ class ExportPricebookJob implements ShouldQueue
             fwrite($fh, "<Surcharges>\n</Surcharges>\n");
             fwrite($fh, "</Price_Book>\n");
             fwrite($fh, "</BT9000_XML_FILE>\n");
-        } finally {
-            fclose($fh);
-        }
 
-        rename($tmp, $path);
+            fclose($fh);
+            rename($tmp, $path);
+
+            $export->update([
+                'status'           => 'completed',
+                'finished_at'      => now(),
+                'records_exported' => DB::table('pb_skus')->count(),
+            ]);
+        } catch (\Throwable $e) {
+            fclose($fh);
+            @unlink($tmp);
+            $export->update([
+                'status'        => 'failed',
+                'finished_at'   => now(),
+                'error_message' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
     // -------------------------------------------------------------------------

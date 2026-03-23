@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ExportPricebookJob;
+use App\Models\Pricebook\PricebookExport;
 use Illuminate\Console\Command;
 
 class ExportPricebook extends Command
@@ -34,7 +35,13 @@ class ExportPricebook extends Command
             }
         }
 
-        $job = new ExportPricebookJob($outputPath);
+        $export = PricebookExport::create([
+            'file_path'  => $outputPath,
+            'started_at' => now(),
+            'status'     => 'running',
+        ]);
+
+        $job = new ExportPricebookJob($outputPath, $export->id);
 
         if ($this->option('sync')) {
             $this->info('Running export synchronously...');
@@ -47,7 +54,7 @@ class ExportPricebook extends Command
             }
         } else {
             dispatch($job);
-            $this->info('Export job queued. The file will be updated shortly.');
+            $this->info("Export job queued (export ID: {$export->id}). Monitor progress in the admin panel.");
         }
 
         return self::SUCCESS;

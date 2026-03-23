@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\PricebookImportResource\Pages;
 use App\Jobs\ExportPricebookJob;
 use App\Jobs\ImportPricebookJob;
+use App\Models\Pricebook\PricebookExport;
 use App\Models\Pricebook\PricebookImport;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -143,11 +144,17 @@ class PricebookImportResource extends Resource
                             $filePath = base_path($filePath);
                         }
 
-                        dispatch(new ExportPricebookJob($filePath));
+                        $export = PricebookExport::create([
+                            'file_path'  => $filePath,
+                            'started_at' => now(),
+                            'status'     => 'running',
+                        ]);
+
+                        dispatch(new ExportPricebookJob($filePath, $export->id));
 
                         Notification::make()
-                            ->title('Export queued successfully')
-                            ->body('The XML file will be updated in the background.')
+                            ->title('Export queued')
+                            ->body('Check Export History to see when it completes.')
                             ->success()
                             ->send();
                     }),
