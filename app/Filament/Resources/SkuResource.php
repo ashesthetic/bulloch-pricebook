@@ -138,6 +138,22 @@ class SkuResource extends Resource
                                 ->numeric(),
                         ])->columns(2),
 
+                    Forms\Components\Tabs\Tab::make('UPCs')
+                        ->schema([
+                            Forms\Components\Repeater::make('upcs')
+                                ->label('')
+                                ->relationship('upcs')
+                                ->schema([
+                                    Forms\Components\TextInput::make('upc')
+                                        ->label('UPC')
+                                        ->required()
+                                        ->maxLength(13)
+                                        ->columnSpanFull(),
+                                ])
+                                ->addActionLabel('Add UPC')
+                                ->columnSpanFull(),
+                        ]),
+
                     Forms\Components\Tabs\Tab::make('Linked SKUs')
                         ->schema([
                             Forms\Components\Repeater::make('linkedSkus')
