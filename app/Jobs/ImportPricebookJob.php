@@ -341,7 +341,7 @@ class ImportPricebookJob implements ShouldQueue
         $sku = [
             'item_number'                       => $itemNumber,
             'english_description'               => (string) $node->English_Description,
-            'french_description'                => $this->str($node->French_Description),
+            'french_description'                => $this->rawStr($node->French_Description),
             'price'                             => (float) $node->Price,
             'department_number'                 => (string) $node->Department,
             'price_group_number'                => $this->str($node->Price_Group) ?: null,
@@ -414,9 +414,11 @@ class ImportPricebookJob implements ShouldQueue
             foreach ($node->Linked_SKUs->Linked_SKU as $l) {
                 $val = trim((string) $l);
                 if ($val !== '') {
+                    $mandatory = strtolower((string) ($l->attributes()['Mandatory'] ?? '')) === 'true';
                     $linked[] = [
                         'item_number'        => $itemNumber,
                         'linked_item_number' => $val,
+                        'mandatory'          => $mandatory,
                         'created_at'         => $now,
                         'updated_at'         => $now,
                     ];
@@ -632,6 +634,16 @@ class ImportPricebookJob implements ShouldQueue
             return null;
         }
         $val = trim((string) $node);
+        return $val !== '' ? $val : null;
+    }
+
+    /** Like str() but preserves leading/trailing spaces (for pre-padded BT9000 descriptions). */
+    private function rawStr(mixed $node): ?string
+    {
+        if (!isset($node[0])) {
+            return null;
+        }
+        $val = (string) $node;
         return $val !== '' ? $val : null;
     }
 

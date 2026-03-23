@@ -76,6 +76,13 @@ class ExportPricebookJob implements ShouldQueue
             fwrite($fh, "</BT9000_XML_FILE>\n");
 
             fclose($fh);
+
+            // Convert LF to CRLF to match original BT9000 file format
+            $content = file_get_contents($tmp);
+            $content = str_replace("\r\n", "\n", $content);
+            $content = str_replace("\n", "\r\n", $content);
+            file_put_contents($tmp, $content);
+
             rename($tmp, $path);
 
             $export->update([
@@ -116,11 +123,11 @@ class ExportPricebookJob implements ShouldQueue
                 fwrite($fh, "<Department Department_Number=\"{$row->department_number}\">\n");
                 fwrite($fh, $this->el('Description', $this->pad18($row->description)));
                 fwrite($fh, $this->el('Shift_Report_Flag', $this->yn($row->shift_report_flag)));
-                fwrite($fh, $this->el('Sales_Summary_Report', $this->yn($row->sales_summary_report)));
+                fwrite($fh, $this->elOpt('Sales_Summary_Report', $this->ynY($row->sales_summary_report)));
+                fwrite($fh, $this->elOpt('BT9000_Inventory_Control', $this->ynY($row->bt9000_inventory_control)));
                 fwrite($fh, $this->elOpt('Owner', $row->owner));
-                fwrite($fh, $this->elOpt('BT9000_Inventory_Control', $this->yn($row->bt9000_inventory_control)));
                 fwrite($fh, $this->elOpt('Conexxus_Product_Code', $row->conexxus_product_code));
-                fwrite($fh, $this->elOpt('Gift_Card_Department', $this->yn($row->gift_card_department)));
+                fwrite($fh, $this->elOpt('Gift_Card_Department', $this->ynY($row->gift_card_department)));
                 fwrite($fh, "</Department>\n");
             }
         });
@@ -225,45 +232,36 @@ class ExportPricebookJob implements ShouldQueue
             foreach ($rows as $row) {
                 $n = $row->item_number;
                 fwrite($fh, "<Stock_Keeping_Unit Item_Number = \"{$n}\">\n");
+                // Item_Deposit comes before Price in original format
+                fwrite($fh, $this->elOpt('Item_Deposit', $this->price($row->item_deposit)));
                 fwrite($fh, $this->el('Price', $this->price($row->price)));
                 fwrite($fh, $this->el('English_Description', $this->pad18($row->english_description)));
                 fwrite($fh, $this->elOpt('French_Description', $row->french_description !== null ? $this->pad18($row->french_description) : null));
                 fwrite($fh, $this->el('Department', $row->department_number));
                 fwrite($fh, $this->elOpt('Price_Group', $row->price_group_number));
-                fwrite($fh, $this->elOpt('Item_Deposit', $this->price($row->item_deposit)));
                 fwrite($fh, $this->elOpt('Promo_Code', $row->promo_code));
                 fwrite($fh, $this->elOpt('Host_Product_Code', $row->host_product_code));
-                fwrite($fh, $this->elOpt('TAX1', $this->yn($row->tax1)));
-                fwrite($fh, $this->elOpt('TAX2', $this->yn($row->tax2)));
-                fwrite($fh, $this->elOpt('TAX3', $this->yn($row->tax3)));
-                fwrite($fh, $this->elOpt('TAX4', $this->yn($row->tax4)));
-                fwrite($fh, $this->elOpt('TAX5', $this->yn($row->tax5)));
-                fwrite($fh, $this->elOpt('TAX6', $this->yn($row->tax6)));
-                fwrite($fh, $this->elOpt('TAX7', $this->yn($row->tax7)));
-                fwrite($fh, $this->elOpt('TAX8', $this->yn($row->tax8)));
-                fwrite($fh, $this->elOpt('Prompt_For_Price', $this->yn($row->prompt_for_price)));
-                fwrite($fh, $this->elOpt('Item_Not_Active', $this->yn($row->item_not_active)));
-                fwrite($fh, $this->elOpt('Tax_Included_Price', $this->yn($row->tax_included_price)));
+                // Tax flags — only written when Y
+                fwrite($fh, $this->elOpt('TAX1', $this->ynY($row->tax1)));
+                fwrite($fh, $this->elOpt('TAX2', $this->ynY($row->tax2)));
+                fwrite($fh, $this->elOpt('TAX3', $this->ynY($row->tax3)));
+                fwrite($fh, $this->elOpt('TAX4', $this->ynY($row->tax4)));
+                fwrite($fh, $this->elOpt('TAX5', $this->ynY($row->tax5)));
+                fwrite($fh, $this->elOpt('TAX6', $this->ynY($row->tax6)));
+                fwrite($fh, $this->elOpt('TAX7', $this->ynY($row->tax7)));
+                fwrite($fh, $this->elOpt('TAX8', $this->ynY($row->tax8)));
+                fwrite($fh, $this->elOpt('Item_Not_Active', $this->ynY($row->item_not_active)));
+                fwrite($fh, $this->elOpt('Tax_Included_Price', $this->ynY($row->tax_included_price)));
                 fwrite($fh, $this->elOpt('Wash_Type', $row->wash_type));
                 fwrite($fh, $this->elOpt('Car_Wash_Controller_Code', $row->car_wash_controller_code !== null ? (string) $row->car_wash_controller_code : null));
                 fwrite($fh, $this->elOpt('Upsell_Quantity_For_Car_Wash_At_Pump', $row->upsell_qty_car_wash !== null ? (string) $row->upsell_qty_car_wash : null));
                 fwrite($fh, $this->elOpt('Petro_Canada_PASS_Code', $row->petro_canada_pass_code !== null ? (string) $row->petro_canada_pass_code : null));
-                fwrite($fh, $this->elOpt('Item_Desc_Not_On_2nd_Monitor', $this->yn($row->item_desc_not_on_2nd_monitor)));
-                fwrite($fh, $this->elOpt('Ontario_RST_Tax_Off', $this->yn($row->ontario_rst_tax_off)));
-                fwrite($fh, $this->elOpt('Ontario_RST_Tax_On', $this->yn($row->ontario_rst_tax_on)));
-                fwrite($fh, $this->elOpt('Federal_Baked_Good_Item', $this->yn($row->federal_baked_good_item)));
-                fwrite($fh, $this->elOpt('Prevent_BT9000_Inventory_Control', $this->yn($row->prevent_bt9000_inventory_control)));
-                fwrite($fh, $this->elOpt('Conexxus_Product_Code', $row->conexxus_product_code));
-                fwrite($fh, $this->elOpt('Car_Wash_Expiry_In_Days', $row->car_wash_expiry_in_days !== null ? (string) $row->car_wash_expiry_in_days : null));
-                fwrite($fh, $this->elOpt('AFD_Car_Wash_Position_On_Screen', $row->afd_car_wash_position !== null ? (string) $row->afd_car_wash_position : null));
-                fwrite($fh, $this->elOpt('Age_Requirements', $row->age_requirements !== null ? (string) $row->age_requirements : null));
-                fwrite($fh, $this->elOpt('Redemption_Only', $this->yn($row->redemption_only)));
-                fwrite($fh, $this->el('Loyalty_Card_Eligible', $row->loyalty_card_eligible ? 'Y' : 'N'));
-                fwrite($fh, $this->elOpt('Delivery_Channel_Price', $this->price($row->delivery_channel_price)));
-                fwrite($fh, $this->elOpt('Tax_Strategy_ID_From_NACS', $row->tax_strategy_id_from_nacs));
-                fwrite($fh, $this->elOpt('Owner', $row->owner));
-
-                // UPCs
+                fwrite($fh, $this->elOpt('Item_Desc_Not_On_2nd_Monitor', $this->ynY($row->item_desc_not_on_2nd_monitor)));
+                fwrite($fh, $this->elOpt('Ontario_RST_Tax_Off', $this->ynY($row->ontario_rst_tax_off)));
+                fwrite($fh, $this->elOpt('Ontario_RST_Tax_On', $this->ynY($row->ontario_rst_tax_on)));
+                fwrite($fh, $this->elOpt('Federal_Baked_Good_Item', $this->ynY($row->federal_baked_good_item)));
+                fwrite($fh, $this->elOpt('Prevent_BT9000_Inventory_Control', $this->ynY($row->prevent_bt9000_inventory_control)));
+                // UPCs come after tax flags, before Conexxus/Owner
                 $upcs = $upcsByItem->get($n, collect());
                 if ($upcs->isNotEmpty()) {
                     fwrite($fh, "<UPCs>\n");
@@ -272,8 +270,16 @@ class ExportPricebookJob implements ShouldQueue
                     }
                     fwrite($fh, "</UPCs>\n");
                 }
-
-                // Quantity Pricing
+                fwrite($fh, $this->elOpt('Conexxus_Product_Code', $row->conexxus_product_code));
+                fwrite($fh, $this->elOpt('Car_Wash_Expiry_In_Days', $row->car_wash_expiry_in_days !== null ? (string) $row->car_wash_expiry_in_days : null));
+                fwrite($fh, $this->elOpt('AFD_Car_Wash_Position_On_Screen', $row->afd_car_wash_position !== null ? (string) $row->afd_car_wash_position : null));
+                fwrite($fh, $this->elOpt('Prompt_For_Price', $this->ynY($row->prompt_for_price)));
+                fwrite($fh, $this->elOpt('Age_Requirements', $row->age_requirements !== null ? (string) $row->age_requirements : null));
+                fwrite($fh, $this->elOpt('Redemption_Only', $this->ynY($row->redemption_only)));
+                fwrite($fh, $this->elOpt('Owner', $row->owner));
+                fwrite($fh, $this->elOpt('Tax_Strategy_ID_From_NACS', $row->tax_strategy_id_from_nacs));
+                fwrite($fh, $this->el('Loyalty_Card_Eligible', $row->loyalty_card_eligible ? 'Y' : 'N'));
+                // Quantity Pricing comes before Linked SKUs
                 $qty = $qtyByItem->get($n, collect());
                 if ($qty->isNotEmpty()) {
                     fwrite($fh, "<Quantity_Pricing>\n");
@@ -285,17 +291,19 @@ class ExportPricebookJob implements ShouldQueue
                     }
                     fwrite($fh, "</Quantity_Pricing>\n");
                 }
-
-                // Linked SKUs
+                // Linked SKUs come after Quantity_Pricing
                 $linked = $linkedByItem->get($n, collect());
                 if ($linked->isNotEmpty()) {
                     fwrite($fh, "<Linked_SKUs>\n");
                     foreach ($linked as $l) {
-                        fwrite($fh, $this->el('Linked_SKU', $l->linked_item_number));
+                        if ($l->mandatory) {
+                            fwrite($fh, "<Linked_SKU Mandatory=\"true\">" . $this->esc($l->linked_item_number) . "</Linked_SKU>\n");
+                        } else {
+                            fwrite($fh, $this->el('Linked_SKU', $l->linked_item_number));
+                        }
                     }
                     fwrite($fh, "</Linked_SKUs>\n");
                 }
-
                 // Linkable SKUs
                 $linkable = $linkableByItem->get($n, collect());
                 if ($linkable->isNotEmpty()) {
@@ -305,7 +313,7 @@ class ExportPricebookJob implements ShouldQueue
                     }
                     fwrite($fh, "</Linkable_SKUs>\n");
                 }
-
+                fwrite($fh, $this->elOpt('Delivery_Channel_Price', $this->price($row->delivery_channel_price)));
                 fwrite($fh, "</Stock_Keeping_Unit>\n");
             }
         });
@@ -430,12 +438,12 @@ class ExportPricebookJob implements ShouldQueue
             fwrite($fh, $this->elOpt('French_Description', $group->french_description !== null ? $this->pad18($group->french_description) : null));
             fwrite($fh, $this->elOpt('Start_Date', $group->start_date !== null ? str_replace('-', '', $group->start_date) : null));
             fwrite($fh, $this->elOpt('End_Date', $group->end_date !== null ? str_replace('-', '', $group->end_date) : null));
-            fwrite($fh, $this->elOpt('Fuel_Mix_And_Match_Check', $this->yn($group->fuel_mix_and_match_check)));
-            fwrite($fh, $this->elOpt('Dont_Calculate_Deal', $this->yn($group->dont_calculate_deal)));
-            fwrite($fh, $this->elOpt('Deal_Not_Active', $this->yn($group->deal_not_active)));
-            fwrite($fh, $this->elOpt('Available_In_Kiosk_Only', $this->yn($group->available_in_kiosk_only)));
-            fwrite($fh, $this->elOpt('CPL_STACKING_CPN', $this->yn($group->cpl_stacking_cpn)));
-            fwrite($fh, $this->elOpt('Available_At_Pump_Only', $this->yn($group->available_at_pump_only)));
+            fwrite($fh, $this->elOpt('Fuel_Mix_And_Match_Check', $this->ynY($group->fuel_mix_and_match_check)));
+            fwrite($fh, $this->elOpt('Dont_Calculate_Deal', $this->ynY($group->dont_calculate_deal)));
+            fwrite($fh, $this->elOpt('Deal_Not_Active', $this->ynY($group->deal_not_active)));
+            fwrite($fh, $this->elOpt('Available_In_Kiosk_Only', $this->ynY($group->available_in_kiosk_only)));
+            fwrite($fh, $this->elOpt('CPL_STACKING_CPN', $this->ynY($group->cpl_stacking_cpn)));
+            fwrite($fh, $this->elOpt('Available_At_Pump_Only', $this->ynY($group->available_at_pump_only)));
             fwrite($fh, $this->elOpt('Reason_Code_For_Deal', $group->reason_code_for_deal !== null ? (string) $group->reason_code_for_deal : null));
             fwrite($fh, $this->elOpt('Station_ID_For_Deal', $group->station_id_for_deal));
             fwrite($fh, $this->elOpt('Fixed_Dollar_Off', $this->price($group->fixed_dollar_off)));
@@ -451,7 +459,7 @@ class ExportPricebookJob implements ShouldQueue
             if ($group->loyalty_card_description !== null) {
                 fwrite($fh, "<Loyalty_Card_Required_To_Use_Deal_Group>\n");
                 fwrite($fh, $this->el('Loyalty_Card_Description', $group->loyalty_card_description));
-                fwrite($fh, $this->elOpt('Card_Restriction', $this->yn($group->loyalty_card_restriction)));
+                fwrite($fh, $this->elOpt('Card_Restriction', $this->ynY($group->loyalty_card_restriction)));
                 fwrite($fh, $this->elOpt('Card_Swipe_Type', $group->loyalty_card_swipe_type !== null ? (string) $group->loyalty_card_swipe_type : null));
                 fwrite($fh, "</Loyalty_Card_Required_To_Use_Deal_Group>\n");
             }
@@ -514,7 +522,7 @@ class ExportPricebookJob implements ShouldQueue
             foreach ($rows as $row) {
                 fwrite($fh, "<Payout Payout_Number = \"{$row->payout_number}\">\n");
                 fwrite($fh, $this->el('English_Description', $this->pad18($row->english_description)));
-                fwrite($fh, $this->elOpt('French_Description', $row->french_description !== null ? $this->pad18($row->french_description) : null));
+                fwrite($fh, $this->el('French_Description', $this->pad18($row->french_description)));
                 fwrite($fh, "</Payout>\n");
             }
         });
@@ -610,7 +618,7 @@ class ExportPricebookJob implements ShouldQueue
 
     private function esc(?string $value): string
     {
-        return htmlspecialchars($value ?? '', ENT_XML1 | ENT_COMPAT, 'UTF-8');
+        return htmlspecialchars($value ?? '', ENT_XML1 | ENT_QUOTES, 'UTF-8');
     }
 
     private function pad18(?string $value): string
@@ -632,5 +640,11 @@ class ExportPricebookJob implements ShouldQueue
             return null;
         }
         return $value ? 'Y' : 'N';
+    }
+
+    /** Returns 'Y' or null — use with elOpt() for flags that should be omitted when false */
+    private function ynY(mixed $value): ?string
+    {
+        return $value ? 'Y' : null;
     }
 }
