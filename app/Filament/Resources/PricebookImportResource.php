@@ -115,13 +115,21 @@ class PricebookImportResource extends Resource
                             'status'     => 'running',
                         ]);
 
-                        dispatch(new ImportPricebookJob($filePath, $import->id));
-
-                        Notification::make()
-                            ->title('Import queued successfully')
-                            ->body("Import #{$import->id} is running in the background.")
-                            ->success()
-                            ->send();
+                        try {
+                            (new ImportPricebookJob($filePath, $import->id))->handle();
+                            $import->refresh();
+                            Notification::make()
+                                ->title('Import complete')
+                                ->body("Import #{$import->id} finished successfully.")
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->title('Import failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Tables\Actions\Action::make('export')
                     ->label('Export to File')
@@ -150,13 +158,20 @@ class PricebookImportResource extends Resource
                             'status'     => 'running',
                         ]);
 
-                        dispatch(new ExportPricebookJob($filePath, $export->id));
-
-                        Notification::make()
-                            ->title('Export queued')
-                            ->body('Check Export History to see when it completes.')
-                            ->success()
-                            ->send();
+                        try {
+                            (new ExportPricebookJob($filePath, $export->id))->handle();
+                            Notification::make()
+                                ->title('Export complete')
+                                ->body('The XML file has been updated successfully.')
+                                ->success()
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->title('Export failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     }),
             ])
             ->actions([
