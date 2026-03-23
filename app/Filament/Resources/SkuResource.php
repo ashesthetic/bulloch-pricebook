@@ -160,7 +160,7 @@ class SkuResource extends Resource
                                             ->value('english_description')
                                             ? trim(DB::table('pb_skus')->where('item_number', $value)->value('english_description')) . " [{$value}]"
                                             : $value)
-                                        ->required()
+                                        ->nullable()
                                         ->columnSpan(2),
                                     Forms\Components\Toggle::make('mandatory')
                                         ->label('Mandatory')
