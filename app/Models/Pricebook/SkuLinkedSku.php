@@ -11,5 +11,10 @@ class SkuLinkedSku extends Model
     protected $fillable = [
         'item_number',
         'linked_item_number',
+        'mandatory',
+    ];
+
+    protected $casts = [
+        'mandatory' => 'boolean',
     ];
 }

@@ -6,6 +6,7 @@ use App\Filament\Resources\SkuResource\Pages;
 use App\Models\Pricebook\Department;
 use App\Models\Pricebook\PriceGroup;
 use App\Models\Pricebook\Sku;
+use Illuminate\Support\Facades\DB;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -136,6 +137,39 @@ class SkuResource extends Resource
                                 ->label('Age Requirements')
                                 ->numeric(),
                         ])->columns(2),
+
+                    Forms\Components\Tabs\Tab::make('Linked SKUs')
+                        ->schema([
+                            Forms\Components\Repeater::make('linkedSkus')
+                                ->label('')
+                                ->relationship('linkedSkus')
+                                ->schema([
+                                    Forms\Components\Select::make('linked_item_number')
+                                        ->label('SKU')
+                                        ->searchable()
+                                        ->getSearchResultsUsing(fn (string $search) => DB::table('pb_skus')
+                                            ->where('item_number', 'like', "%{$search}%")
+                                            ->orWhere('english_description', 'like', "%{$search}%")
+                                            ->orderBy('english_description')
+                                            ->limit(50)
+                                            ->pluck('english_description', 'item_number')
+                                            ->map(fn ($desc, $num) => trim($desc) . " [{$num}]")
+                                            ->toArray())
+                                        ->getOptionLabelUsing(fn ($value) => DB::table('pb_skus')
+                                            ->where('item_number', $value)
+                                            ->value('english_description')
+                                            ? trim(DB::table('pb_skus')->where('item_number', $value)->value('english_description')) . " [{$value}]"
+                                            : $value)
+                                        ->required()
+                                        ->columnSpan(2),
+                                    Forms\Components\Toggle::make('mandatory')
+                                        ->label('Mandatory')
+                                        ->columnSpan(1),
+                                ])
+                                ->columns(3)
+                                ->addActionLabel('Add linked SKU')
+                                ->columnSpanFull(),
+                        ]),
                 ])
                 ->columnSpanFull(),
         ]);
