@@ -37,6 +37,28 @@ class PriceGroupResource extends Resource
                 ->numeric()
                 ->prefix('$')
                 ->required(),
+            Forms\Components\Repeater::make('quantityPricing')
+                ->label('Quantity Pricing')
+                ->relationship('quantityPricing')
+                ->schema([
+                    Forms\Components\TextInput::make('quantity')
+                        ->label('Quantity')
+                        ->numeric()
+                        ->integer()
+                        ->minValue(1)
+                        ->required()
+                        ->columnSpan(1),
+                    Forms\Components\TextInput::make('price')
+                        ->label('Price')
+                        ->numeric()
+                        ->prefix('$')
+                        ->required()
+                        ->columnSpan(1),
+                ])
+                ->columns(2)
+                ->orderColumn('quantity')
+                ->addActionLabel('Add tier')
+                ->columnSpanFull(),
         ]);
     }
 
