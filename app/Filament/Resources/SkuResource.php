@@ -208,16 +208,10 @@ class SkuResource extends Resource
                 Tables\Columns\TextColumn::make('department.description')
                     ->label('Department')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('loyalty_card_eligible')
-                    ->label('Loyalty')
-                    ->boolean(),
-                Tables\Columns\BadgeColumn::make('item_not_active')
-                    ->label('Status')
-                    ->formatStateUsing(fn ($state) => $state ? 'Inactive' : 'Active')
-                    ->colors([
-                        'danger'  => true,
-                        'success' => false,
-                    ]),
+                Tables\Columns\TextColumn::make('upcs.upc')
+                    ->label('UPC')
+                    ->listWithLineBreaks()
+                    ->searchable(),
             ])
             ->defaultSort('english_description')
             ->searchable()
