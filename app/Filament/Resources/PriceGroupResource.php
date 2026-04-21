@@ -56,7 +56,6 @@ class PriceGroupResource extends Resource
                         ->columnSpan(1),
                 ])
                 ->columns(2)
-                ->orderColumn('quantity')
                 ->addActionLabel('Add tier')
                 ->columnSpanFull(),
         ]);

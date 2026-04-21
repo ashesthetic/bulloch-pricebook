@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class SkuResource extends Resource
 {
@@ -208,10 +209,13 @@ class SkuResource extends Resource
                 Tables\Columns\TextColumn::make('department.description')
                     ->label('Department')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('priceGroup.english_description')
+                    ->label('Price Group')
+                    ->searchable()
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('upcs.upc')
                     ->label('UPC')
-                    ->listWithLineBreaks()
-                    ->searchable(),
+                    ->listWithLineBreaks(),
             ])
             ->defaultSort('english_description')
             ->searchable()
@@ -219,6 +223,10 @@ class SkuResource extends Resource
                 Tables\Filters\SelectFilter::make('department_number')
                     ->label('Department')
                     ->options(fn () => Department::orderBy('description')->pluck('description', 'department_number')),
+                Tables\Filters\SelectFilter::make('price_group_number')
+                    ->label('Price Group')
+                    ->options(fn () => PriceGroup::orderBy('english_description')->pluck('english_description', 'price_group_number'))
+                    ->placeholder('All'),
                 Tables\Filters\TernaryFilter::make('item_not_active')
                     ->label('Active Status')
                     ->trueLabel('Inactive only')
@@ -232,6 +240,35 @@ class SkuResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('changeDepartment')
+                        ->label('Change Department')
+                        ->icon('heroicon-o-building-storefront')
+                        ->form([
+                            Forms\Components\Select::make('department_number')
+                                ->label('Department')
+                                ->options(fn () => Department::orderBy('description')->pluck('description', 'department_number'))
+                                ->searchable()
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $records->each->update(['department_number' => $data['department_number']]);
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('changePriceGroup')
+                        ->label('Change Price Group')
+                        ->icon('heroicon-o-currency-dollar')
+                        ->form([
+                            Forms\Components\Select::make('price_group_number')
+                                ->label('Price Group')
+                                ->options(fn () => PriceGroup::orderBy('english_description')->pluck('english_description', 'price_group_number'))
+                                ->searchable()
+                                ->nullable()
+                                ->placeholder('No price group (clear)'),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $records->each->update(['price_group_number' => $data['price_group_number'] ?: null]);
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

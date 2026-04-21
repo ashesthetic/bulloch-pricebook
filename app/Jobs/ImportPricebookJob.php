@@ -74,6 +74,7 @@ class ImportPricebookJob implements ShouldQueue
     private function truncateTables(): void
     {
         $tables = [
+            'pb_tender_coupon_upcs',
             'pb_tenders_coupons',
             'pb_loyalty_card_bins',
             'pb_loyalty_cards',
@@ -231,10 +232,15 @@ class ImportPricebookJob implements ShouldQueue
 
             } elseif ($name === 'Item' && $currentSection === 'Tenders_Coupons') {
                 $node = simplexml_import_dom($reader->expand($dom));
-                $buffers['pb_tenders_coupons'][] = $this->parseTenderCoupon($node, $now);
+                ['row' => $row, 'upcs' => $upcs] = $this->parseTenderCoupon($node, $now);
+                $buffers['pb_tenders_coupons'][] = $row;
+                foreach ($upcs as $u) {
+                    $buffers['pb_tender_coupon_upcs'][] = $u;
+                }
                 $counts['tenders_coupons'] = ($counts['tenders_coupons'] ?? 0) + 1;
                 $processedRecords++;
                 $this->maybeFlush($buffers, 'pb_tenders_coupons', $batchSize, $processedRecords, $import);
+                $this->maybeFlush($buffers, 'pb_tender_coupon_upcs', $batchSize, $processedRecords, $import);
             }
         }
 
@@ -598,13 +604,45 @@ class ImportPricebookJob implements ShouldQueue
 
     private function parseTenderCoupon(\SimpleXMLElement $node, string $now): array
     {
-        return [
-            'item_number'         => (string) $node['Item_Number'],
-            'english_description' => (string) $node->English_Description,
-            'french_description'  => $this->str($node->French_Description),
-            'created_at'          => $now,
-            'updated_at'          => $now,
+        $itemNumber = (string) $node['Item_Number'];
+
+        $row = [
+            'item_number'                    => $itemNumber,
+            'english_description'            => (string) $node->English_Description,
+            'french_description'             => $this->str($node->French_Description),
+            'prompt_for_amount'              => $this->yn($node->Prompt_For_Amount),
+            'tender_type'                    => $this->int($node->Tender_Type),
+            'amount'                         => $this->decimal($node->Amount),
+            'loyalty_card_description'       => $this->str($node->Loyalty_Card_Required_To_Use_Deal_Group->Loyalty_Card_Description),
+            'loyalty_card_restriction'       => $this->yn($node->Loyalty_Card_Required_To_Use_Deal_Group->Card_Restriction),
+            'loyalty_card_swipe_type'        => $this->int($node->Loyalty_Card_Required_To_Use_Deal_Group->Card_Swipe_Type),
+            'type_of_restrictions'           => $this->int($node->Type_Of_Restrictions),
+            'restriction_identifier'         => $this->str($node->Restriction_Identifier),
+            'available_at_pump_only'         => $this->yn($node->Available_At_Pump_Only),
+            'available_in_kiosk_only'        => $this->yn($node->Available_In_Kiosk_Only),
+            'coupon_not_active'              => $this->yn($node->Coupon_Not_Active),
+            'max_per_customer'               => $this->int($node->Max_Per_Customer),
+            'start_date'                     => $this->parseDate($this->str($node->Start_Date)),
+            'end_date'                       => $this->parseDate($this->str($node->End_Date)),
+            'coupon_accounting_implications' => $this->str($node->Coupon_Accounting_Implications),
+            'created_at'                     => $now,
+            'updated_at'                     => $now,
         ];
+
+        $upcs = [];
+        foreach ($node->UPCs->UPC ?? [] as $upc) {
+            $val = trim((string) $upc);
+            if ($val !== '') {
+                $upcs[] = [
+                    'item_number' => $itemNumber,
+                    'upc'         => $val,
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ];
+            }
+        }
+
+        return ['row' => $row, 'upcs' => $upcs];
     }
 
     // -------------------------------------------------------------------------

@@ -587,11 +587,47 @@ class ExportPricebookJob implements ShouldQueue
         fwrite($fh, "<!--Section <UPCs>-->\n");
         fwrite($fh, "<!--UPC -Numeric, Item ID '0000000000000' - '9999999999999'-->\n");
 
-        DB::table('pb_tenders_coupons')->orderBy('item_number')->chunk(500, function ($rows) use ($fh) {
+        $upcsByItem = DB::table('pb_tender_coupon_upcs')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('item_number');
+
+        DB::table('pb_tenders_coupons')->orderBy('item_number')->chunk(500, function ($rows) use ($fh, $upcsByItem) {
             foreach ($rows as $row) {
                 fwrite($fh, "<Item Item_Number = \"{$row->item_number}\">\n");
                 fwrite($fh, $this->el('English_Description', $this->pad18($row->english_description)));
                 fwrite($fh, $this->elOpt('French_Description', $row->french_description !== null ? $this->pad18($row->french_description) : null));
+                fwrite($fh, $this->elOpt('Prompt_For_Amount', $this->ynY($row->prompt_for_amount)));
+                fwrite($fh, $this->elOpt('Tender_Type', $row->tender_type !== null ? (string) $row->tender_type : null));
+                fwrite($fh, $this->elOpt('Amount', $this->price($row->amount)));
+
+                if ($row->loyalty_card_description !== null) {
+                    fwrite($fh, "<Loyalty_Card_Required_To_Use_Deal_Group>\n");
+                    fwrite($fh, $this->el('Loyalty_Card_Description', $row->loyalty_card_description));
+                    fwrite($fh, $this->elOpt('Card_Restriction', $this->ynY($row->loyalty_card_restriction)));
+                    fwrite($fh, $this->elOpt('Card_Swipe_Type', $row->loyalty_card_swipe_type !== null ? (string) $row->loyalty_card_swipe_type : null));
+                    fwrite($fh, "</Loyalty_Card_Required_To_Use_Deal_Group>\n");
+                }
+
+                fwrite($fh, $this->elOpt('Type_Of_Restrictions', $row->type_of_restrictions !== null ? (string) $row->type_of_restrictions : null));
+                fwrite($fh, $this->elOpt('Restriction_Identifier', $row->restriction_identifier));
+                fwrite($fh, $this->elOpt('Available_At_Pump_Only', $this->ynY($row->available_at_pump_only)));
+                fwrite($fh, $this->elOpt('Available_In_Kiosk_Only', $this->ynY($row->available_in_kiosk_only)));
+                fwrite($fh, $this->elOpt('Coupon_Not_Active', $this->ynY($row->coupon_not_active)));
+                fwrite($fh, $this->elOpt('Max_Per_Customer', $row->max_per_customer !== null ? (string) $row->max_per_customer : null));
+                fwrite($fh, $this->elOpt('Start_Date', $row->start_date !== null ? str_replace('-', '', $row->start_date) : null));
+                fwrite($fh, $this->elOpt('End_Date', $row->end_date !== null ? str_replace('-', '', $row->end_date) : null));
+                fwrite($fh, $this->elOpt('Coupon_Accounting_Implications', $row->coupon_accounting_implications));
+
+                $upcs = $upcsByItem->get($row->item_number, collect());
+                if ($upcs->isNotEmpty()) {
+                    fwrite($fh, "<UPCs>\n");
+                    foreach ($upcs as $u) {
+                        fwrite($fh, $this->el('UPC', $u->upc));
+                    }
+                    fwrite($fh, "</UPCs>\n");
+                }
+
                 fwrite($fh, "</Item>\n");
             }
         });
