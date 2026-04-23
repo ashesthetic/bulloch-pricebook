@@ -128,6 +128,8 @@ class ExportPricebookJob implements ShouldQueue
                 fwrite($fh, $this->elOpt('Owner', $row->owner));
                 fwrite($fh, $this->elOpt('Conexxus_Product_Code', $row->conexxus_product_code));
                 fwrite($fh, $this->elOpt('Gift_Card_Department', $this->ynY($row->gift_card_department)));
+                fwrite($fh, $this->elOpt('Age_Requirements', $row->age_requirements !== null ? (string) $row->age_requirements : null));
+                fwrite($fh, $this->elOpt('Default_Item', $row->default_item));
                 fwrite($fh, "</Department>\n");
             }
         });
@@ -436,6 +438,8 @@ class ExportPricebookJob implements ShouldQueue
             fwrite($fh, "<Deal_Group Deal_Group_Number = \"{$group->deal_group_number}\">\n");
             fwrite($fh, $this->elOpt('English_Description', $group->english_description !== null ? $this->pad18($group->english_description) : null));
             fwrite($fh, $this->elOpt('French_Description', $group->french_description !== null ? $this->pad18($group->french_description) : null));
+            fwrite($fh, $this->elOpt('English_AFD_Car_Wash_Message_For_Gilbarco', $group->english_afd_car_wash_message));
+            fwrite($fh, $this->elOpt('French_AFD_Car_Wash_Message_For_Gilbarco', $group->french_afd_car_wash_message));
             fwrite($fh, $this->elOpt('Start_Date', $group->start_date !== null ? str_replace('-', '', $group->start_date) : null));
             fwrite($fh, $this->elOpt('End_Date', $group->end_date !== null ? str_replace('-', '', $group->end_date) : null));
             fwrite($fh, $this->elOpt('Fuel_Mix_And_Match_Check', $this->ynY($group->fuel_mix_and_match_check)));

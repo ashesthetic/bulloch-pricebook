@@ -14,6 +14,8 @@ class DealGroup extends Model
         'type',
         'english_description',
         'french_description',
+        'english_afd_car_wash_message',
+        'french_afd_car_wash_message',
         'start_date',
         'end_date',
         'fuel_mix_and_match_check',

@@ -38,6 +38,14 @@ class DealGroupResource extends Resource
             Forms\Components\TextInput::make('french_description')
                 ->label('French Description')
                 ->maxLength(18),
+            Forms\Components\TextInput::make('english_afd_car_wash_message')
+                ->label('English AFD Car Wash Message (Gilbarco)')
+                ->maxLength(80)
+                ->columnSpanFull(),
+            Forms\Components\TextInput::make('french_afd_car_wash_message')
+                ->label('French AFD Car Wash Message (Gilbarco)')
+                ->maxLength(80)
+                ->columnSpanFull(),
             Forms\Components\DatePicker::make('start_date')
                 ->label('Start Date'),
             Forms\Components\DatePicker::make('end_date')

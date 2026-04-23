@@ -41,6 +41,14 @@ class DepartmentResource extends Resource
                 ->maxLength(10),
             Forms\Components\Toggle::make('gift_card_department')
                 ->label('Gift Card Department'),
+            Forms\Components\TextInput::make('age_requirements')
+                ->label('Age Requirements')
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(99),
+            Forms\Components\TextInput::make('default_item')
+                ->label('Default Item')
+                ->maxLength(13),
         ]);
     }
 

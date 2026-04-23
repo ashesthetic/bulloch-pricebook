@@ -306,6 +306,8 @@ class ImportPricebookJob implements ShouldQueue
             'bt9000_inventory_control'  => $this->yn($node->BT9000_Inventory_Control),
             'conexxus_product_code'     => $this->str($node->Conexxus_Product_Code),
             'gift_card_department'      => $this->yn($node->Gift_Card_Department),
+            'age_requirements'          => $this->int($node->Age_Requirements),
+            'default_item'              => $this->str($node->Default_Item),
             'created_at'                => $now,
             'updated_at'                => $now,
         ];
@@ -497,9 +499,11 @@ class ImportPricebookJob implements ShouldQueue
         $row = [
             'deal_group_number'       => (string) $node['Deal_Group_Number'],
             'type'                    => $type,
-            'english_description'     => $this->str($node->English_Description),
-            'french_description'      => $this->str($node->French_Description),
-            'start_date'              => $this->parseDate($this->str($node->Start_Date)),
+            'english_description'           => $this->str($node->English_Description),
+            'french_description'            => $this->str($node->French_Description),
+            'english_afd_car_wash_message'  => $this->str($node->English_AFD_Car_Wash_Message_For_Gilbarco),
+            'french_afd_car_wash_message'   => $this->str($node->French_AFD_Car_Wash_Message_For_Gilbarco),
+            'start_date'                    => $this->parseDate($this->str($node->Start_Date)),
             'end_date'                => $this->parseDate($this->str($node->End_Date)),
             'fuel_mix_and_match_check' => $this->yn($node->Fuel_Mix_And_Match_Check),
             'dont_calculate_deal'     => $this->yn($node->Dont_Calculate_Deal),

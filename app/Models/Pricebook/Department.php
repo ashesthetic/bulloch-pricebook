@@ -21,6 +21,8 @@ class Department extends Model
         'bt9000_inventory_control',
         'conexxus_product_code',
         'gift_card_department',
+        'age_requirements',
+        'default_item',
     ];
 
     protected $casts = [

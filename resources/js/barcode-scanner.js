@@ -1,7 +1,7 @@
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { NotFoundException } from '@zxing/library';
 
-const reader = new BrowserMultiFormatReader();
+let reader = null;
 let isScanning = false;
 
 async function startScanner() {
@@ -13,10 +13,27 @@ async function startScanner() {
 
     container.classList.remove('hidden');
     isScanning = true;
+    reader = new BrowserMultiFormatReader();
+
+    // Apply continuous autofocus after the stream starts (iOS requires applyConstraints, not getUserMedia hints)
+    video.addEventListener('playing', async () => {
+        const stream = video.srcObject;
+        const [track] = stream?.getVideoTracks() ?? [];
+        if (track) {
+            try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); }
+            catch (_) { /* focusMode not supported — silently ignored */ }
+        }
+    }, { once: true });
 
     try {
         await reader.decodeFromConstraints(
-            { video: { facingMode: 'environment' } },
+            {
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width:  { ideal: 1920 },
+                    height: { ideal: 1080 },
+                },
+            },
             video,
             (result, error) => {
                 if (result) {
@@ -33,11 +50,18 @@ async function startScanner() {
         console.error('Could not start camera:', err);
         isScanning = false;
         document.getElementById('scanner-container')?.classList.add('hidden');
+        // Surface the error in the UI if the page has an error element
+        const errEl = document.getElementById('error-msg');
+        if (errEl) {
+            errEl.textContent = 'Could not access camera: ' + (err.message ?? err);
+            errEl.style.display = 'block';
+        }
     }
 }
 
 function stopScanner() {
-    reader.reset();
+    reader?.reset();
+    reader = null;
     isScanning = false;
     document.getElementById('scanner-container')?.classList.add('hidden');
 }

@@ -149,9 +149,40 @@ class SkuResource extends Resource
                                         ->label('UPC')
                                         ->required()
                                         ->maxLength(13)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (?string $state, Forms\Set $set): void {
+                                            $upc = trim((string) $state);
+                                            if ($upc === '') {
+                                                return;
+                                            }
+                                            $normalized = str_pad(substr($upc, 0, -1), 13, '0', STR_PAD_LEFT);
+                                            $set('upc', $normalized);
+                                        })
                                         ->columnSpanFull(),
                                 ])
                                 ->addActionLabel('Add UPC')
+                                ->columnSpanFull(),
+                        ]),
+
+                    Forms\Components\Tabs\Tab::make('Quantity Pricing')
+                        ->schema([
+                            Forms\Components\Repeater::make('quantityPricing')
+                                ->label('')
+                                ->relationship('quantityPricing')
+                                ->schema([
+                                    Forms\Components\TextInput::make('quantity')
+                                        ->label('Quantity')
+                                        ->numeric()
+                                        ->required()
+                                        ->minValue(1),
+                                    Forms\Components\TextInput::make('price')
+                                        ->label('Price for Quantity')
+                                        ->numeric()
+                                        ->prefix('$')
+                                        ->required(),
+                                ])
+                                ->columns(2)
+                                ->addActionLabel('Add quantity pricing tier')
                                 ->columnSpanFull(),
                         ]),
 
