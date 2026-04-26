@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class SkuResource extends Resource
@@ -247,6 +248,16 @@ class SkuResource extends Resource
                 Tables\Columns\TextColumn::make('upcs.upc')
                     ->label('UPC')
                     ->listWithLineBreaks(),
+                Tables\Columns\TextColumn::make('quantityPricingDisplay')
+                    ->label('Quantity Pricing')
+                    ->state(fn (Sku $record): array => $record->quantityPricing
+                        ->sortBy('quantity')
+                        ->map(fn ($qp) => "{$qp->quantity} for \$" . number_format((float) $qp->price, 2))
+                        ->values()
+                        ->toArray()
+                    )
+                    ->listWithLineBreaks()
+                    ->placeholder('—'),
             ])
             ->defaultSort('english_description')
             ->searchable()
@@ -264,6 +275,10 @@ class SkuResource extends Resource
                     ->falseLabel('Active only'),
                 Tables\Filters\TernaryFilter::make('loyalty_card_eligible')
                     ->label('Loyalty Eligible'),
+                Tables\Filters\Filter::make('with_quantity_pricing')
+                    ->label('With Quantity Pricing')
+                    ->toggle()
+                    ->query(fn (Builder $query) => $query->whereHas('quantityPricing')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
