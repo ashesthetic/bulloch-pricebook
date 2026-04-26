@@ -4,9 +4,11 @@ namespace App\Filament\Resources\SkuResource\Pages;
 
 use App\Filament\Resources\SkuResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Livewire\Attributes\On;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class EditSku extends EditRecord
@@ -42,6 +44,7 @@ class EditSku extends EditRecord
         Cache::put("scan:{$token}", '', now()->addMinutes(5));
         $this->activeScanToken = $token;
         $this->activeScanUrl = rtrim(config('app.scan_url'), '/') . '/scan/' . $token;
+        $this->dispatch('scan-ready');
     }
 
     public function checkScanToken(): void
@@ -56,15 +59,48 @@ class EditSku extends EditRecord
             return;
         }
 
-        $normalized = str_pad(substr(trim($upc), 0, -1), 13, '0', STR_PAD_LEFT);
-
-        $upcs = $this->data['upcs'] ?? [];
-        $upcs[(string) Str::uuid()] = ['upc' => $normalized];
-        $this->data = array_merge($this->data, ['upcs' => $upcs]);
+        $this->addUpc($upc);
 
         Cache::forget("scan:{$this->activeScanToken}");
         $this->activeScanToken = null;
 
         $this->dispatch('close-modal', id: 'scan-barcode');
+    }
+
+    #[On('barcode-detected')]
+    public function handleBarcodeDetected(string $upc): void
+    {
+        if (! $this->activeScanToken) {
+            return;
+        }
+
+        if ($this->addUpc($upc)) {
+            $this->activeScanToken = null;
+            $this->dispatch('close-modal', id: 'scan-barcode');
+        }
+    }
+
+    private function addUpc(string $rawUpc): bool
+    {
+        $normalized = str_pad(substr(trim($rawUpc), 0, -1), 13, '0', STR_PAD_LEFT);
+
+        $upcs = $this->data['upcs'] ?? [];
+
+        foreach ($upcs as $entry) {
+            if (($entry['upc'] ?? '') === $normalized) {
+                Notification::make()
+                    ->title('UPC already added')
+                    ->body("{$normalized} is already in the UPC list.")
+                    ->warning()
+                    ->send();
+
+                return false;
+            }
+        }
+
+        $upcs[(string) Str::uuid()] = ['upc' => $normalized];
+        $this->data = array_merge($this->data, ['upcs' => $upcs]);
+
+        return true;
     }
 }

@@ -74,6 +74,7 @@ window.addEventListener('toggle-scanner', () => {
     }
 });
 
+window.addEventListener('start-scanner', startScanner);
 window.addEventListener('stop-scanner', stopScanner);
 
 // Release camera when Livewire navigates away (SPA mode)
