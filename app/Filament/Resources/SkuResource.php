@@ -148,7 +148,6 @@ class SkuResource extends Resource
                                 ->schema([
                                     Forms\Components\TextInput::make('upc')
                                         ->label('UPC')
-                                        ->required()
                                         ->maxLength(13)
                                         ->live(onBlur: true)
                                         ->afterStateUpdated(function (?string $state, Forms\Set $set): void {
@@ -174,13 +173,11 @@ class SkuResource extends Resource
                                     Forms\Components\TextInput::make('quantity')
                                         ->label('Quantity')
                                         ->numeric()
-                                        ->required()
                                         ->minValue(1),
                                     Forms\Components\TextInput::make('price')
                                         ->label('Price for Quantity')
                                         ->numeric()
-                                        ->prefix('$')
-                                        ->required(),
+                                        ->prefix('$'),
                                 ])
                                 ->columns(2)
                                 ->addActionLabel('Add quantity pricing tier')
@@ -265,6 +262,14 @@ class SkuResource extends Resource
                 Tables\Filters\SelectFilter::make('department_number')
                     ->label('Department')
                     ->options(fn () => Department::orderBy('description')->pluck('description', 'department_number')),
+                Tables\Filters\SelectFilter::make('exclude_departments')
+                    ->label('Exclude Departments')
+                    ->multiple()
+                    ->options(fn () => Department::orderBy('description')->pluck('description', 'department_number'))
+                    ->query(fn (Builder $query, array $data) => empty($data['values'])
+                        ? $query
+                        : $query->whereNotIn('department_number', $data['values'])
+                    ),
                 Tables\Filters\SelectFilter::make('price_group_number')
                     ->label('Price Group')
                     ->options(fn () => PriceGroup::orderBy('english_description')->pluck('english_description', 'price_group_number'))
