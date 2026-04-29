@@ -8,6 +8,19 @@ use Livewire\Attributes\On;
 
 class FindProducts extends Page
 {
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return false;
+        }
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return true;
+        }
+
+        return $user->hasPermissionTo('view_find_products');
+    }
+
     protected static ?string $navigationIcon  = 'heroicon-o-magnifying-glass';
     protected static ?string $navigationGroup = 'Pricebook — Inventory';
     protected static ?string $navigationLabel = 'Find Products';

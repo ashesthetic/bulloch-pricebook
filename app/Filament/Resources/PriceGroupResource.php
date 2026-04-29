@@ -9,9 +9,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Traits\HasPricebookPermissions;
 
 class PriceGroupResource extends Resource
 {
+    use HasPricebookPermissions;
+
+    protected static string $permissionPrefix = 'price_groups';
     protected static ?string $model = PriceGroup::class;
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationGroup = 'Pricebook — Inventory';

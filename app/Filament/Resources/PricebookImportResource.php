@@ -17,6 +17,16 @@ use Filament\Tables\Table;
 class PricebookImportResource extends Resource
 {
     protected static ?string $model = PricebookImport::class;
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasRole(['super_admin', 'admin']) ?? false;
+    }
+
+    public static function canCreate(): bool { return static::canViewAny(); }
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool { return static::canViewAny(); }
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool { return static::canViewAny(); }
+    public static function canDeleteAny(): bool { return static::canViewAny(); }
     protected static ?string $navigationIcon = 'heroicon-o-arrow-down-tray';
     protected static ?string $navigationLabel = 'Import History';
     protected static ?string $navigationGroup = 'System';

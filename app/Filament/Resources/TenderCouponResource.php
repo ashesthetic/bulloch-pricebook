@@ -9,9 +9,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Traits\HasPricebookPermissions;
 
 class TenderCouponResource extends Resource
 {
+    use HasPricebookPermissions;
+
+    protected static string $permissionPrefix = 'tender_coupons';
     protected static ?string $model = TenderCoupon::class;
     protected static ?string $navigationIcon = 'heroicon-o-receipt-percent';
     protected static ?string $navigationGroup = 'Pricebook — Payments';

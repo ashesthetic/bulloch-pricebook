@@ -9,9 +9,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Traits\HasPricebookPermissions;
 
 class DepartmentResource extends Resource
 {
+    use HasPricebookPermissions;
+
+    protected static string $permissionPrefix = 'departments';
     protected static ?string $model = Department::class;
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
     protected static ?string $navigationGroup = 'Pricebook — Inventory';

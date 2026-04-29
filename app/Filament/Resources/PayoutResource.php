@@ -9,9 +9,13 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use App\Traits\HasPricebookPermissions;
 
 class PayoutResource extends Resource
 {
+    use HasPricebookPermissions;
+
+    protected static string $permissionPrefix = 'payouts';
     protected static ?string $model = Payout::class;
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static ?string $navigationGroup = 'Pricebook — Payments';

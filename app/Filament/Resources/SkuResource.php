@@ -14,9 +14,13 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use App\Traits\HasPricebookPermissions;
 
 class SkuResource extends Resource
 {
+    use HasPricebookPermissions;
+
+    protected static string $permissionPrefix = 'skus';
     protected static ?string $model = Sku::class;
     protected static ?string $navigationIcon = 'heroicon-o-tag';
     protected static ?string $navigationGroup = 'Pricebook — Inventory';
@@ -295,6 +299,7 @@ class SkuResource extends Resource
                     Tables\Actions\BulkAction::make('changeDepartment')
                         ->label('Change Department')
                         ->icon('heroicon-o-building-storefront')
+                        ->visible(fn () => auth()->user()?->hasRole(['super_admin', 'admin']) || auth()->user()?->hasPermissionTo('edit_skus'))
                         ->form([
                             Forms\Components\Select::make('department_number')
                                 ->label('Department')
@@ -309,6 +314,7 @@ class SkuResource extends Resource
                     Tables\Actions\BulkAction::make('changePriceGroup')
                         ->label('Change Price Group')
                         ->icon('heroicon-o-currency-dollar')
+                        ->visible(fn () => auth()->user()?->hasRole(['super_admin', 'admin']) || auth()->user()?->hasPermissionTo('edit_skus'))
                         ->form([
                             Forms\Components\Select::make('price_group_number')
                                 ->label('Price Group')
