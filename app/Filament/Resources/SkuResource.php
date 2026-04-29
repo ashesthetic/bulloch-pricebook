@@ -248,6 +248,7 @@ class SkuResource extends Resource
                 Tables\Columns\TextColumn::make('quantityPricingDisplay')
                     ->label('Quantity Pricing')
                     ->state(fn (Sku $record): array => $record->quantityPricing
+                        ->filter(fn ($qp) => $qp->quantity !== null && $qp->price !== null && (float) $qp->price > 0)
                         ->sortBy('quantity')
                         ->map(fn ($qp) => "{$qp->quantity} for \$" . number_format((float) $qp->price, 2))
                         ->values()
