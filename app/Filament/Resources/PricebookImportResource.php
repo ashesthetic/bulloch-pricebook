@@ -90,6 +90,12 @@ class PricebookImportResource extends Resource
             ])
             ->defaultSort('id', 'desc')
             ->headerActions([
+                Tables\Actions\Action::make('download_pricebook')
+                    ->label('Download Pricebook')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->url(route('pricebook.download'))
+                    ->openUrlInNewTab(false),
                 Tables\Actions\Action::make('start_import')
                     ->label('Start Import')
                     ->icon('heroicon-o-play')
