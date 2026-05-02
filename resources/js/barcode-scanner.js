@@ -2,7 +2,9 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 import { NotFoundException } from '@zxing/library';
 
 let reader = null;
+let scannerControls = null;
 let isScanning = false;
+let hasDetectedBarcode = false;
 
 async function startScanner() {
     if (isScanning) return;
@@ -13,6 +15,7 @@ async function startScanner() {
 
     container.classList.remove('hidden');
     isScanning = true;
+    hasDetectedBarcode = false;
     reader = new BrowserMultiFormatReader();
 
     // Apply continuous autofocus after the stream starts (iOS requires applyConstraints, not getUserMedia hints)
@@ -26,7 +29,7 @@ async function startScanner() {
     }, { once: true });
 
     try {
-        await reader.decodeFromConstraints(
+        scannerControls = await reader.decodeFromConstraints(
             {
                 video: {
                     facingMode: { ideal: 'environment' },
@@ -35,10 +38,11 @@ async function startScanner() {
                 },
             },
             video,
-            (result, error) => {
-                if (result) {
+            (result, error, controls) => {
+                if (result && !hasDetectedBarcode) {
+                    hasDetectedBarcode = true;
                     window.Livewire.dispatch('barcode-detected', { upc: result.getText() });
-                    stopScanner();
+                    stopScanner(controls);
                 }
                 // NotFoundException fires every frame without a barcode — not a real error
                 if (error && !(error instanceof NotFoundException)) {
@@ -59,9 +63,15 @@ async function startScanner() {
     }
 }
 
-function stopScanner() {
-    reader?.reset();
+function stopScanner(controls = scannerControls) {
+    const activeControls = typeof controls?.stop === 'function'
+        ? controls
+        : scannerControls;
+
+    activeControls?.stop();
+    scannerControls = null;
     reader = null;
+    hasDetectedBarcode = false;
     isScanning = false;
     document.getElementById('scanner-container')?.classList.add('hidden');
 }
