@@ -20,15 +20,20 @@
             </div>
 
             {{-- Camera scan button --}}
-            <x-filament::button
-                icon="heroicon-o-camera"
-                color="gray"
-                x-data
-                x-on:click="$dispatch('toggle-scanner')"
+            <button
+                type="button"
+                class="fi-btn fi-btn-color-gray fi-color-gray fi-size-md fi-btn-size-md relative inline-grid grid-flow-col items-center justify-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-950 shadow-sm ring-1 ring-gray-950/10 transition duration-75 outline-none hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-gray-400/40 dark:bg-white/5 dark:text-white dark:ring-white/20 dark:hover:bg-white/10"
+                onclick="window.dispatchEvent(new CustomEvent('toggle-scanner'))"
                 title="Scan barcode with camera"
             >
-                Scan
-            </x-filament::button>
+                <x-filament::icon
+                    icon="heroicon-o-camera"
+                    class="fi-btn-icon h-5 w-5 text-gray-400 transition duration-75 dark:text-gray-500"
+                />
+                <span class="fi-btn-label">
+                    Scan
+                </span>
+            </button>
 
             {{-- Manual search button --}}
             <x-filament::button wire:click="searchByUpc">
@@ -50,15 +55,13 @@
             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Align the barcode inside the box.
             </p>
-            <x-filament::button
-                color="danger"
-                size="sm"
-                class="mt-2"
-                x-data
-                x-on:click="$dispatch('stop-scanner')"
+            <button
+                type="button"
+                class="fi-btn fi-btn-color-danger fi-color-danger fi-size-sm fi-btn-size-sm relative mt-2 inline-grid grid-flow-col items-center justify-center gap-1 rounded-lg bg-danger-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm transition duration-75 outline-none hover:bg-danger-500 focus-visible:ring-2 focus-visible:ring-danger-500/50 dark:bg-danger-500 dark:hover:bg-danger-400 dark:focus-visible:ring-danger-400/50"
+                onclick="window.dispatchEvent(new CustomEvent('stop-scanner'))"
             >
                 Stop Camera
-            </x-filament::button>
+            </button>
         </div>
     </div>
 
