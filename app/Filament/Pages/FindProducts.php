@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Pricebook\SkuUpc;
+use App\Support\UpcBarcode;
 use Filament\Pages\Page;
 use Livewire\Attributes\On;
 
@@ -54,11 +55,12 @@ class FindProducts extends Page
             return;
         }
 
-        // Drop check digit (last digit), then left-pad to 13 digits
-        $upc = substr($upc, 0, -1);
-        $upc = str_pad($upc, 13, '0', STR_PAD_LEFT);
+        // Drop check digit (last digit), then left-pad to 13 digits.
+        $upc = UpcBarcode::normalizeStoredPayload($upc, stripCheckDigit: true);
 
-        $skuUpc = SkuUpc::with('sku')->where('upc', $upc)->first();
+        $skuUpc = $upc === null
+            ? null
+            : SkuUpc::with('sku')->where('upc', $upc)->first();
 
         if ($skuUpc === null || $skuUpc->sku === null) {
             $this->notFound = true;

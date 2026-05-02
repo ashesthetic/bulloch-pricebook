@@ -6,6 +6,7 @@ use App\Filament\Resources\SkuResource\Pages;
 use App\Models\Pricebook\Department;
 use App\Models\Pricebook\PriceGroup;
 use App\Models\Pricebook\Sku;
+use App\Support\UpcBarcode;
 use Illuminate\Support\Facades\DB;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -155,13 +156,22 @@ class SkuResource extends Resource
                                         ->maxLength(13)
                                         ->live(onBlur: true)
                                         ->afterStateUpdated(function (?string $state, Forms\Set $set): void {
-                                            $upc = trim((string) $state);
-                                            if ($upc === '') {
+                                            $normalized = UpcBarcode::normalizeStoredPayload($state);
+
+                                            if ($normalized === null) {
                                                 return;
                                             }
-                                            $normalized = str_pad(substr($upc, 0, -1), 13, '0', STR_PAD_LEFT);
+
                                             $set('upc', $normalized);
                                         })
+                                        ->columnSpanFull(),
+                                    Forms\Components\ViewField::make('upc_barcode')
+                                        ->label('Barcode')
+                                        ->view('filament.forms.components.upc-barcode')
+                                        ->viewData(fn (Forms\Get $get): array => [
+                                            'upc' => $get('upc'),
+                                        ])
+                                        ->dehydrated(false)
                                         ->columnSpanFull(),
                                 ])
                                 ->addActionLabel('Add UPC')
@@ -246,9 +256,9 @@ class SkuResource extends Resource
                     ->label('Price Group')
                     ->searchable()
                     ->placeholder('—'),
-                Tables\Columns\TextColumn::make('upcs.upc')
+                Tables\Columns\ViewColumn::make('upcs')
                     ->label('UPC')
-                    ->listWithLineBreaks(),
+                    ->view('filament.tables.columns.sku-upcs-with-barcodes'),
                 Tables\Columns\TextColumn::make('quantityPricingDisplay')
                     ->label('Quantity Pricing')
                     ->state(fn (Sku $record): array => $record->quantityPricing

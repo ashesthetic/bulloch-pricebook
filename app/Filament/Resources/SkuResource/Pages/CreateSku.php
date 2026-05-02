@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SkuResource\Pages;
 
 use App\Filament\Resources\SkuResource;
+use App\Support\UpcBarcode;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -81,7 +82,11 @@ class CreateSku extends CreateRecord
 
     private function addUpc(string $rawUpc): bool
     {
-        $normalized = str_pad(substr(trim($rawUpc), 0, -1), 13, '0', STR_PAD_LEFT);
+        $normalized = UpcBarcode::normalizeStoredPayload($rawUpc, stripCheckDigit: true);
+
+        if ($normalized === null) {
+            return false;
+        }
 
         $upcs = $this->data['upcs'] ?? [];
 
