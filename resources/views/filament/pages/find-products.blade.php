@@ -95,6 +95,37 @@
                     Edit this SKU
                 </x-filament::link>
             </div>
+
+            @if ($product['has_multiple_upcs'])
+                <div class="mt-5 rounded-lg bg-warning-50 p-4 ring-1 ring-warning-200 dark:bg-warning-400/10 dark:ring-warning-400/30">
+                    <p class="font-medium text-warning-900 dark:text-warning-300">
+                        This product shares multiple UPCs. Do you want to create a new product?
+                    </p>
+
+                    <form wire:submit="createProductFromScannedUpc" class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+                        <div class="flex-1">
+                            <label for="new-product-name" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                                Name
+                            </label>
+                            <x-filament::input.wrapper :valid="! $errors->has('newProductName')">
+                                <x-filament::input
+                                    id="new-product-name"
+                                    type="text"
+                                    wire:model="newProductName"
+                                    maxlength="18"
+                                />
+                            </x-filament::input.wrapper>
+                            @error('newProductName')
+                                <p class="mt-1 text-sm text-danger-600 dark:text-danger-400">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <x-filament::button type="submit" icon="heroicon-o-plus">
+                            Create
+                        </x-filament::button>
+                    </form>
+                </div>
+            @endif
         </div>
     @endif
 
