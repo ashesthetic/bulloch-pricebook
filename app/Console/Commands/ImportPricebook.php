@@ -17,7 +17,7 @@ class ImportPricebook extends Command
 
     public function handle(): int
     {
-        $filePath = $this->option('path') ?? env('PRICEBOOK_PATH');
+        $filePath = $this->option('path') ?? config('pricebook.path');
 
         if (empty($filePath)) {
             $this->error('No file path provided. Set PRICEBOOK_PATH in .env or use --path option.');

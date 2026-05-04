@@ -104,7 +104,7 @@ class PricebookImportResource extends Resource
                     ->modalHeading('Start Pricebook Import')
                     ->modalDescription('This will truncate all pricebook tables and re-import from the XML file. Continue?')
                     ->action(function () {
-                        $filePath = env('PRICEBOOK_PATH');
+                        $filePath = config('pricebook.path');
                         if (empty($filePath)) {
                             Notification::make()
                                 ->title('PRICEBOOK_PATH is not set in .env')
@@ -155,7 +155,7 @@ class PricebookImportResource extends Resource
                     ->modalHeading('Export Pricebook to XML')
                     ->modalDescription('This will overwrite the existing XML file with current database data. Continue?')
                     ->action(function () {
-                        $filePath = env('PRICEBOOK_PATH');
+                        $filePath = config('pricebook.path');
                         if (empty($filePath)) {
                             Notification::make()
                                 ->title('PRICEBOOK_PATH is not set in .env')

@@ -7,12 +7,12 @@ Route::get('/', fn () => redirect('/admin'));
 Route::get('/pricebook/download', function () {
     abort_unless(auth()->user()?->hasRole(['super_admin', 'admin']), 403);
 
-    $filePath = env('PRICEBOOK_PATH');
+    $filePath = config('pricebook.path');
     if (! str_starts_with($filePath, '/')) {
         $filePath = base_path($filePath);
     }
 
-    abort_if(empty($filePath) || ! file_exists($filePath), 404);
+    abort_if(empty($filePath) || ! is_file($filePath), 404);
 
     return response()->download($filePath, 'BT9000 Price Book.XML');
 })->middleware('auth')->name('pricebook.download');

@@ -17,7 +17,7 @@ class ExportPricebook extends Command
 
     public function handle(): int
     {
-        $outputPath = $this->option('path') ?? env('PRICEBOOK_PATH');
+        $outputPath = $this->option('path') ?? config('pricebook.path');
 
         if (empty($outputPath)) {
             $this->error('No output path provided. Set PRICEBOOK_PATH in .env or use --path option.');
