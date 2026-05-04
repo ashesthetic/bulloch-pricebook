@@ -16,7 +16,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem;
+            padding: 1rem;
             text-align: center;
         }
         h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; }
@@ -32,14 +32,15 @@
             cursor: pointer;
             margin-bottom: 1rem;
         }
-        #scanner-section { width: 100%; }
+        #scanner-section { width: 100%; max-width: 48rem; }
         #scanner-container {
-            width: calc(100vw - 3rem);
-            max-width: 400px;
-            height: calc(min(100vw - 3rem, 400px) * 9 / 16);
+            width: 100%;
+            height: min(72dvh, 34rem);
+            min-height: 22rem;
             position: relative;
             border-radius: 0.75rem;
             overflow: hidden;
+            background: #020617;
         }
         #scanner-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
         #scan-overlay {
@@ -51,11 +52,11 @@
             pointer-events: none;
         }
         #scan-guide {
-            width: 85%;
-            height: 28%;
+            width: 88%;
+            height: 24%;
             border: 2px solid rgba(255, 255, 255, 0.9);
             border-radius: 6px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
         }
         .hint { margin-top: 0.75rem; font-size: 0.8rem; color: #64748b; margin-bottom: 0; }
         #success {

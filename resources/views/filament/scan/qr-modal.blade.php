@@ -34,8 +34,8 @@
     <div x-show="isMobile">
         <div
             id="scanner-container"
-            class="relative overflow-hidden rounded-lg w-full"
-            style="aspect-ratio: 16/9; max-width: 400px;"
+            class="relative w-full overflow-hidden rounded-lg bg-black"
+            style="max-width: 44rem; height: clamp(18rem, 70dvh, 34rem);"
         >
             <video
                 id="scanner-video"
@@ -43,7 +43,7 @@
                 autoplay muted playsinline
             ></video>
             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div style="width:85%;height:28%;border:2px solid rgba(255,255,255,0.85);border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,0.45);"></div>
+                <div style="width:88%;height:24%;border:2px solid rgba(255,255,255,0.9);border-radius:6px;box-shadow:0 0 0 9999px rgba(0,0,0,0.35);"></div>
             </div>
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Align the barcode inside the box.</p>

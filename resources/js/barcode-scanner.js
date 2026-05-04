@@ -1,11 +1,41 @@
 import { BrowserMultiFormatReader } from '@zxing/browser';
-import { NotFoundException } from '@zxing/library';
+import { BarcodeFormat, DecodeHintType, NotFoundException } from '@zxing/library';
 
 let reader = null;
 let scannerControls = null;
 let isScanning = false;
 let hasDetectedBarcode = false;
 let activeScanId = 0;
+
+const hints = new Map();
+hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+    BarcodeFormat.UPC_A,
+    BarcodeFormat.UPC_E,
+    BarcodeFormat.EAN_13,
+    BarcodeFormat.EAN_8,
+]);
+hints.set(DecodeHintType.TRY_HARDER, true);
+
+const scannerOptions = {
+    delayBetweenScanAttempts: 100,
+    delayBetweenScanSuccess: 250,
+};
+
+const cameraConstraints = {
+    video: {
+        facingMode: { ideal: 'environment' },
+        width:  { min: 1280, ideal: 1920 },
+        height: { min: 720, ideal: 1080 },
+    },
+};
+
+const fallbackCameraConstraints = {
+    video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1280 },
+        height: { ideal: 720 },
+    },
+};
 
 async function startScanner() {
     if (isScanning) return;
@@ -18,40 +48,26 @@ async function startScanner() {
     isScanning = true;
     hasDetectedBarcode = false;
     const scanId = ++activeScanId;
-    reader = new BrowserMultiFormatReader();
+    reader = new BrowserMultiFormatReader(hints, scannerOptions);
 
     // Apply continuous autofocus after the stream starts (iOS requires applyConstraints, not getUserMedia hints)
     video.addEventListener('playing', async () => {
         const stream = video.srcObject;
         const [track] = stream?.getVideoTracks() ?? [];
         if (track) {
-            try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); }
-            catch (_) { /* focusMode not supported — silently ignored */ }
+            try {
+                await track.applyConstraints({
+                    advanced: [
+                        { focusMode: 'continuous' },
+                        { exposureMode: 'continuous' },
+                    ],
+                });
+            } catch (_) { /* Camera constraint not supported — silently ignored */ }
         }
     }, { once: true });
 
     try {
-        const controls = await reader.decodeFromConstraints(
-            {
-                video: {
-                    facingMode: { ideal: 'environment' },
-                    width:  { ideal: 1920 },
-                    height: { ideal: 1080 },
-                },
-            },
-            video,
-            (result, error, controls) => {
-                if (result && isScanning && scanId === activeScanId && !hasDetectedBarcode) {
-                    hasDetectedBarcode = true;
-                    window.Livewire.dispatch('barcode-detected', { upc: result.getText() });
-                    stopScanner(controls, scanId);
-                }
-                // NotFoundException fires every frame without a barcode — not a real error
-                if (error && !(error instanceof NotFoundException)) {
-                    console.error('Scanner error:', error);
-                }
-            }
-        );
+        const controls = await startDecoding(video, scanId);
 
         if (!isScanning || scanId !== activeScanId || hasDetectedBarcode) {
             controls?.stop();
@@ -72,6 +88,30 @@ async function startScanner() {
             errEl.textContent = 'Could not access camera: ' + (err.message ?? err);
             errEl.style.display = 'block';
         }
+    }
+}
+
+async function startDecoding(video, scanId) {
+    const onFrameDecoded = (result, error, controls) => {
+        if (result && isScanning && scanId === activeScanId && !hasDetectedBarcode) {
+            hasDetectedBarcode = true;
+            window.Livewire.dispatch('barcode-detected', { upc: result.getText() });
+            stopScanner(controls, scanId);
+        }
+        // NotFoundException fires every frame without a barcode — not a real error
+        if (error && !(error instanceof NotFoundException)) {
+            console.error('Scanner error:', error);
+        }
+    };
+
+    try {
+        return await reader.decodeFromConstraints(cameraConstraints, video, onFrameDecoded);
+    } catch (err) {
+        if (err?.name !== 'OverconstrainedError' && err?.name !== 'ConstraintNotSatisfiedError') {
+            throw err;
+        }
+
+        return reader.decodeFromConstraints(fallbackCameraConstraints, video, onFrameDecoded);
     }
 }
 
