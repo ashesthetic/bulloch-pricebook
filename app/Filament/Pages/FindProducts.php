@@ -139,7 +139,7 @@ class FindProducts extends Page
 
         session()->flash('sku_copy_data', [
             'new_upc' => $this->upc,
-            'fields' => $sku->only($sku->getFillable()),
+            'fields' => $sku->only(array_diff($sku->getFillable(), ['item_number'])),
             'quantityPricing' => $sku->quantityPricing
                 ->map(fn ($qp) => ['quantity' => $qp->quantity, 'price' => $qp->price])
                 ->toArray(),
