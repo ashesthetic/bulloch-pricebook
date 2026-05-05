@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Pricebook\Sku;
 use App\Models\Pricebook\SkuUpc;
 use App\Services\Pricebook\SkuFromSharedUpcCreator;
 use App\Support\UpcBarcode;
@@ -42,6 +43,14 @@ class FindProducts extends Page
 
     public bool $notFound = false;
 
+    public bool $copyMode = false;
+
+    public string $copySourceUpc = '';
+
+    public ?array $copySourceProduct = null;
+
+    public bool $copySourceNotFound = false;
+
     public function searchByUpc(): void
     {
         $this->performLookup($this->upc);
@@ -50,8 +59,96 @@ class FindProducts extends Page
     #[On('barcode-detected')]
     public function handleBarcodeDetected(string $upc): void
     {
-        $this->upc = $upc;
-        $this->performLookup($upc);
+        if ($this->copyMode) {
+            $this->copySourceUpc = $upc;
+            $this->lookupCopySource($upc);
+        } else {
+            $this->upc = $upc;
+            $this->performLookup($upc);
+        }
+    }
+
+    public function startCopyMode(): void
+    {
+        $this->copyMode = true;
+        $this->copySourceUpc = '';
+        $this->copySourceProduct = null;
+        $this->copySourceNotFound = false;
+    }
+
+    public function cancelCopyMode(): void
+    {
+        $this->copyMode = false;
+        $this->copySourceUpc = '';
+        $this->copySourceProduct = null;
+        $this->copySourceNotFound = false;
+    }
+
+    public function searchCopySource(): void
+    {
+        $this->lookupCopySource($this->copySourceUpc);
+    }
+
+    private function lookupCopySource(string $rawUpc): void
+    {
+        $this->copySourceProduct = null;
+        $this->copySourceNotFound = false;
+
+        $upc = trim($rawUpc);
+
+        if (blank($upc)) {
+            return;
+        }
+
+        $normalized = UpcBarcode::normalizeStoredPayload($upc, stripCheckDigit: true);
+
+        $skuUpc = $normalized === null
+            ? null
+            : SkuUpc::with('sku')->where('upc', $normalized)->first();
+
+        if ($skuUpc === null || $skuUpc->sku === null) {
+            $this->copySourceNotFound = true;
+
+            return;
+        }
+
+        $this->copySourceProduct = [
+            'item_number' => $skuUpc->sku->item_number,
+            'english_description' => trim($skuUpc->sku->english_description),
+            'price' => $skuUpc->sku->price,
+        ];
+    }
+
+    public function navigateToCreateWithCopy(): void
+    {
+        if ($this->copySourceProduct === null) {
+            return;
+        }
+
+        $sku = Sku::with(['quantityPricing', 'linkedSkus'])
+            ->find($this->copySourceProduct['item_number']);
+
+        if ($sku === null) {
+            Notification::make()
+                ->title('Product no longer exists')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        session()->flash('sku_copy_data', [
+            'new_upc' => $this->upc,
+            'fields' => $sku->only($sku->getFillable()),
+            'quantityPricing' => $sku->quantityPricing
+                ->map(fn ($qp) => ['quantity' => $qp->quantity, 'price' => $qp->price])
+                ->toArray(),
+            'linkedSkus' => $sku->linkedSkus
+                ->map(fn ($ls) => ['linked_item_number' => $ls->linked_item_number, 'mandatory' => $ls->mandatory])
+                ->toArray(),
+        ]);
+
+        $this->redirect(route('filament.admin.resources.skus.create'));
     }
 
     private function performLookup(string $rawUpc): void

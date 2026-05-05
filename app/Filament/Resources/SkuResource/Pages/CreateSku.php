@@ -20,6 +20,38 @@ class CreateSku extends CreateRecord
 
     public ?string $activeScanUrl = null;
 
+    public function mount(): void
+    {
+        parent::mount();
+
+        if ($upc = request()->query('upc')) {
+            $this->addUpc((string) $upc);
+        }
+
+        if ($copyData = session()->pull('sku_copy_data')) {
+            $newData = array_merge($this->data, $copyData['fields']);
+
+            if (! empty($copyData['quantityPricing'])) {
+                $qp = [];
+                foreach ($copyData['quantityPricing'] as $item) {
+                    $qp[(string) Str::uuid()] = $item;
+                }
+                $newData['quantityPricing'] = $qp;
+            }
+
+            if (! empty($copyData['linkedSkus'])) {
+                $ls = [];
+                foreach ($copyData['linkedSkus'] as $item) {
+                    $ls[(string) Str::uuid()] = $item;
+                }
+                $newData['linkedSkus'] = $ls;
+            }
+
+            $this->data = $newData;
+            $this->addUpc($copyData['new_upc']);
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
