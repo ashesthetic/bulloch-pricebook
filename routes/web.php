@@ -17,5 +17,9 @@ Route::get('/pricebook/download', function () {
     return response()->download($filePath, 'BT9000 Price Book.XML');
 })->middleware('auth')->name('pricebook.download');
 
+Route::get('/print/price-tags', App\Http\Controllers\PrintTagsController::class)
+    ->middleware('auth')
+    ->name('print.price-tags');
+
 Route::get('/scan/{token}', [App\Http\Controllers\ScanController::class, 'show'])->name('scan.show');
 Route::post('/scan/{token}', [App\Http\Controllers\ScanController::class, 'store'])->name('scan.store');
