@@ -15,7 +15,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use App\Models\PrintQueueItem;
 use App\Traits\HasPricebookPermissions;
+use Filament\Notifications\Notification;
 
 class SkuResource extends Resource
 {
@@ -301,6 +303,20 @@ class SkuResource extends Resource
                     ->query(fn (Builder $query) => $query->whereHas('quantityPricing')),
             ])
             ->actions([
+                Tables\Actions\Action::make('addToPrintQueue')
+                    ->label('Add to Queue')
+                    ->icon('heroicon-o-printer')
+                    ->color('success')
+                    ->action(function (Sku $record): void {
+                        PrintQueueItem::firstOrCreate(
+                            ['user_id' => auth()->id(), 'item_number' => $record->item_number],
+                            ['copies' => 1]
+                        );
+                        Notification::make()
+                            ->title('Added to print queue')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
