@@ -15,6 +15,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use App\Models\ModifierQueueItem;
 use App\Models\PrintQueueItem;
 use App\Traits\HasPricebookPermissions;
 use Filament\Notifications\Notification;
@@ -314,6 +315,20 @@ class SkuResource extends Resource
                         );
                         Notification::make()
                             ->title('Added to print queue')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('addToModifierQueue')
+                    ->label('Add to Modifier Queue')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('warning')
+                    ->action(function (Sku $record): void {
+                        ModifierQueueItem::firstOrCreate([
+                            'user_id' => auth()->id(),
+                            'item_number' => $record->item_number,
+                        ]);
+                        Notification::make()
+                            ->title('Added to modifier queue')
                             ->success()
                             ->send();
                     }),
