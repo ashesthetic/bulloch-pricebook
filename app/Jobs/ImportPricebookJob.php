@@ -63,12 +63,18 @@ class ImportPricebookJob implements ShouldQueue
 
     private function estimateTotalRecords(string $filePath): int
     {
-        // Count Stock_Keeping_Unit elements as the majority of records
-        $output = shell_exec('grep -c "<Stock_Keeping_Unit " ' . escapeshellarg($filePath) . ' 2>/dev/null');
-        $skuCount = (int) trim((string) $output);
+        $count = 0;
+        $handle = fopen($filePath, 'r');
+        if ($handle) {
+            while (($line = fgets($handle)) !== false) {
+                if (str_contains($line, '<Stock_Keeping_Unit ')) {
+                    $count++;
+                }
+            }
+            fclose($handle);
+        }
 
-        // Add rough estimate for other sections (~500 additional records)
-        return max($skuCount + 500, 1);
+        return max($count + 500, 1);
     }
 
     private function truncateTables(): void
