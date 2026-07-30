@@ -115,15 +115,23 @@ class ReplaceLinkedSkus extends Page
                     continue;
                 }
 
-                $newItemNumber = str_pad($rawInput, 13, '0', STR_PAD_LEFT);
-
-                if ($newItemNumber === $row['old_item_number']) {
-                    continue;
-                }
+                // Item numbers aren't all 13-digit zero-padded — try the value as typed
+                // first, and only fall back to zero-padding it as a convenience.
+                $newItemNumber = $rawInput;
 
                 if (! Sku::whereKey($newItemNumber)->exists()) {
-                    $errors[] = "{$row['old_item_number']}: item {$newItemNumber} does not exist.";
+                    $padded = str_pad($rawInput, 13, '0', STR_PAD_LEFT);
 
+                    if ($padded !== $newItemNumber && Sku::whereKey($padded)->exists()) {
+                        $newItemNumber = $padded;
+                    } else {
+                        $errors[] = "{$row['old_item_number']}: item {$rawInput} does not exist.";
+
+                        continue;
+                    }
+                }
+
+                if ($newItemNumber === $row['old_item_number']) {
                     continue;
                 }
 
