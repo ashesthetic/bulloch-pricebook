@@ -302,6 +302,13 @@ class SkuResource extends Resource
                     ->label('With Quantity Pricing')
                     ->toggle()
                     ->query(fn (Builder $query) => $query->whereHas('quantityPricing')),
+                Tables\Filters\SelectFilter::make('linked_sku_filter')
+                    ->label('Linked SKU')
+                    ->options(fn () => static::linkedSkuFilterOptions())
+                    ->query(fn (Builder $query, array $data) => filled($data['value'])
+                        ? $query->whereHas('linkedSkus', fn (Builder $q) => $q->where('linked_item_number', $data['value']))
+                        : $query
+                    ),
             ])
             ->actions([
                 Tables\Actions\Action::make('addToPrintQueue')
@@ -368,9 +375,72 @@ class SkuResource extends Resource
                             $records->each->update(['price_group_number' => $data['price_group_number'] ?: null]);
                         })
                         ->deselectRecordsAfterCompletion(),
+                    Tables\Actions\BulkAction::make('replaceLinkedSku')
+                        ->label('Replace Linked SKU')
+                        ->icon('heroicon-o-arrow-path')
+                        ->visible(fn () => auth()->user()?->hasRole(['super_admin', 'admin']) || auth()->user()?->hasPermissionTo('edit_skus'))
+                        ->form([
+                            Forms\Components\Select::make('old_item_number')
+                                ->label('Replace this Linked SKU')
+                                ->options(fn () => static::linkedSkuFilterOptions())
+                                ->required(),
+                            Forms\Components\Select::make('new_item_number')
+                                ->label('With this SKU')
+                                ->searchable()
+                                ->getSearchResultsUsing(fn (string $search) => DB::table('pb_skus')
+                                    ->where('item_number', 'like', "%{$search}%")
+                                    ->orWhere('english_description', 'like', "%{$search}%")
+                                    ->orderBy('english_description')
+                                    ->limit(50)
+                                    ->pluck('english_description', 'item_number')
+                                    ->map(fn ($desc, $num) => trim($desc) . " [{$num}]")
+                                    ->toArray())
+                                ->getOptionLabelUsing(fn ($value) => DB::table('pb_skus')
+                                    ->where('item_number', $value)
+                                    ->value('english_description')
+                                    ? trim(DB::table('pb_skus')->where('item_number', $value)->value('english_description')) . " [{$value}]"
+                                    : $value)
+                                ->required(),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $updated = 0;
+
+                            foreach ($records as $record) {
+                                $updated += $record->linkedSkus()
+                                    ->where('linked_item_number', $data['old_item_number'])
+                                    ->update(['linked_item_number' => $data['new_item_number']]);
+                            }
+
+                            Notification::make()
+                                ->title('Linked SKU replaced')
+                                ->body("Updated {$updated} reference(s) across the selected items.")
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function linkedSkuFilterOptions(): array
+    {
+        $counts = DB::table('pb_sku_linked_skus')
+            ->select('linked_item_number', DB::raw('count(*) as usage_count'))
+            ->groupBy('linked_item_number')
+            ->orderByDesc('usage_count')
+            ->get();
+
+        $descriptions = DB::table('pb_skus')
+            ->whereIn('item_number', $counts->pluck('linked_item_number'))
+            ->pluck('english_description', 'item_number');
+
+        return $counts->mapWithKeys(function ($row) use ($descriptions) {
+            $description = trim($descriptions->get($row->linked_item_number) ?? '');
+            $label = $description !== '' ? "{$description} [{$row->linked_item_number}]" : $row->linked_item_number;
+
+            return [$row->linked_item_number => "{$label} ({$row->usage_count})"];
+        })->all();
     }
 
     public static function getPages(): array
