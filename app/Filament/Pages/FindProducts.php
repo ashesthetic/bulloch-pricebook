@@ -168,7 +168,7 @@ class FindProducts extends Page
 
         $skuUpc = $upc === null
             ? null
-            : SkuUpc::with(['sku' => fn ($query) => $query->withCount('upcs')->with(['department', 'priceGroup'])])->where('upc', $upc)->first();
+            : SkuUpc::with(['sku' => fn ($query) => $query->withCount('upcs')->with(['department', 'priceGroup.quantityPricing'])])->where('upc', $upc)->first();
 
         if ($skuUpc === null || $skuUpc->sku === null) {
             $this->notFound = true;
@@ -189,6 +189,11 @@ class FindProducts extends Page
             'department_description' => $skuUpc->sku->department?->description,
             'price_group_number' => $skuUpc->sku->price_group_number,
             'price_group_description' => $skuUpc->sku->priceGroup?->english_description,
+            'price_group_quantity_pricing' => $skuUpc->sku->priceGroup
+                ? $skuUpc->sku->priceGroup->quantityPricing
+                    ->map(fn ($qp) => ['quantity' => $qp->quantity, 'price' => $qp->price])
+                    ->toArray()
+                : [],
         ];
 
         $this->newProductName = $productName;

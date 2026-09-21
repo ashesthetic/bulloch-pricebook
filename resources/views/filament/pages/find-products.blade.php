@@ -104,6 +104,16 @@
                             &nbsp;&middot;&nbsp;{{ $product['price_group_description'] }}
                         @endif
                     </p>
+
+                    @if (! empty($product['price_group_quantity_pricing']))
+                        <ul class="mt-2 space-y-0.5">
+                            @foreach ($product['price_group_quantity_pricing'] as $tier)
+                                <li class="text-sm text-gray-600 dark:text-gray-300">
+                                    {{ $tier['quantity'] }} for ${{ number_format($tier['price'], 2) }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
                 </div>
             </div>
 
