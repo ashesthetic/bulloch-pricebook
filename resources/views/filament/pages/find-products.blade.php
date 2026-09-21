@@ -123,6 +123,36 @@
                 </div>
             </div>
 
+            @if (! empty($product['linked_items']))
+                <div class="mt-4 border-t border-gray-100 dark:border-white/10 pt-4">
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                        Linked Items
+                    </p>
+                    <ul class="space-y-1.5">
+                        @foreach ($product['linked_items'] as $linkedItem)
+                            <li class="flex items-center justify-between gap-4 text-sm">
+                                <span class="text-gray-900 dark:text-white">
+                                    #{{ $linkedItem['item_number'] }}
+                                    @if ($linkedItem['english_description'])
+                                        &nbsp;&middot;&nbsp;{{ $linkedItem['english_description'] }}
+                                    @endif
+                                    @if ($linkedItem['mandatory'])
+                                        <span class="ml-1 inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 ring-1 ring-danger-600/10 dark:bg-danger-400/10 dark:text-danger-400">
+                                            Mandatory
+                                        </span>
+                                    @endif
+                                </span>
+                                @if ($linkedItem['price'] !== null)
+                                    <span class="shrink-0 font-medium text-gray-600 dark:text-gray-300">
+                                        ${{ number_format($linkedItem['price'], 2) }}
+                                    </span>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="mt-4 border-t border-gray-100 dark:border-white/10 pt-4">
                 <x-filament::link
                     :href="route('filament.admin.resources.skus.edit', ['record' => $product['item_number']])"

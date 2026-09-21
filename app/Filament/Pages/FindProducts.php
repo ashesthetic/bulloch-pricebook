@@ -168,7 +168,7 @@ class FindProducts extends Page
 
         $skuUpc = $upc === null
             ? null
-            : SkuUpc::with(['sku' => fn ($query) => $query->withCount('upcs')->with(['department', 'priceGroup.quantityPricing'])])->where('upc', $upc)->first();
+            : SkuUpc::with(['sku' => fn ($query) => $query->withCount('upcs')->with(['department', 'priceGroup.quantityPricing', 'linkedSkus'])])->where('upc', $upc)->first();
 
         if ($skuUpc === null || $skuUpc->sku === null) {
             $this->notFound = true;
@@ -177,6 +177,25 @@ class FindProducts extends Page
         }
 
         $productName = trim($skuUpc->sku->english_description);
+
+        $linkedItemNumbers = $skuUpc->sku->linkedSkus->pluck('linked_item_number');
+
+        $linkedSkuDetails = $linkedItemNumbers->isEmpty()
+            ? collect()
+            : Sku::whereIn('item_number', $linkedItemNumbers)->get()->keyBy('item_number');
+
+        $linkedItems = $skuUpc->sku->linkedSkus
+            ->map(function ($linkedSku) use ($linkedSkuDetails) {
+                $detail = $linkedSkuDetails->get($linkedSku->linked_item_number);
+
+                return [
+                    'item_number' => $linkedSku->linked_item_number,
+                    'mandatory' => $linkedSku->mandatory,
+                    'english_description' => $detail ? trim($detail->english_description) : null,
+                    'price' => $detail?->price,
+                ];
+            })
+            ->toArray();
 
         $this->product = [
             'item_number' => $skuUpc->sku->item_number,
@@ -195,6 +214,7 @@ class FindProducts extends Page
                     ->map(fn ($qp) => ['quantity' => $qp->quantity, 'price' => $qp->price])
                     ->toArray()
                 : [],
+            'linked_items' => $linkedItems,
         ];
 
         $this->newProductName = $productName;
