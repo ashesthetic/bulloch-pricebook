@@ -105,6 +105,12 @@
                         @endif
                     </p>
 
+                    @if ($product['price_group_price'] !== null)
+                        <p class="text-sm text-gray-600 dark:text-gray-300">
+                            ${{ number_format($product['price_group_price'], 2) }}
+                        </p>
+                    @endif
+
                     @if (! empty($product['price_group_quantity_pricing']))
                         <ul class="mt-2 space-y-0.5">
                             @foreach ($product['price_group_quantity_pricing'] as $tier)

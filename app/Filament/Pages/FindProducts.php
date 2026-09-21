@@ -189,6 +189,7 @@ class FindProducts extends Page
             'department_description' => $skuUpc->sku->department?->description,
             'price_group_number' => $skuUpc->sku->price_group_number,
             'price_group_description' => $skuUpc->sku->priceGroup?->english_description,
+            'price_group_price' => $skuUpc->sku->priceGroup?->price,
             'price_group_quantity_pricing' => $skuUpc->sku->priceGroup
                 ? $skuUpc->sku->priceGroup->quantityPricing
                     ->map(fn ($qp) => ['quantity' => $qp->quantity, 'price' => $qp->price])
