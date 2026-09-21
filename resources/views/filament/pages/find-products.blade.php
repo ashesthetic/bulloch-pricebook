@@ -11,6 +11,7 @@
                         type="text"
                         wire:model="upc"
                         wire:keydown.enter="searchByUpc"
+                        x-on:upc-cleared.window="$el.value = ''; $el.focus(); $el.select()"
                         placeholder="Type or scan a UPC barcode…"
                         maxlength="13"
                         autofocus
@@ -199,14 +200,14 @@
     @if ($notFound)
         <div class="rounded-xl bg-warning-50 ring-1 ring-warning-200 dark:bg-warning-400/10 dark:ring-warning-400/30 p-6">
             <p class="text-warning-800 dark:text-warning-400 font-medium">
-                No product found for UPC <span class="font-mono">{{ $upc }}</span>.
+                No product found for UPC <span class="font-mono">{{ $searchedUpc }}</span>.
             </p>
 
             @if (! $copyMode)
                 <div class="mt-4 flex flex-wrap gap-3">
                     <x-filament::button
                         tag="a"
-                        :href="route('filament.admin.resources.skus.create') . '?upc=' . urlencode($upc)"
+                        :href="route('filament.admin.resources.skus.create') . '?upc=' . urlencode($searchedUpc)"
                         icon="heroicon-o-plus-circle"
                         color="primary"
                     >
@@ -232,7 +233,7 @@
                 Copy from an Existing Product
             </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Scan or type the UPC of the product you want to copy. All its fields will be pre-filled on the create form, with the UPC replaced by <span class="font-mono font-medium">{{ $upc }}</span>.
+                Scan or type the UPC of the product you want to copy. All its fields will be pre-filled on the create form, with the UPC replaced by <span class="font-mono font-medium">{{ $searchedUpc }}</span>.
             </p>
 
             <div class="flex gap-3">
@@ -242,6 +243,7 @@
                             type="text"
                             wire:model="copySourceUpc"
                             wire:keydown.enter="searchCopySource"
+                            x-on:copy-source-upc-cleared.window="$el.value = ''; $el.focus(); $el.select()"
                             placeholder="Type or scan a UPC barcode…"
                             maxlength="13"
                         />

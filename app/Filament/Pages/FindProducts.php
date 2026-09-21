@@ -37,6 +37,8 @@ class FindProducts extends Page
 
     public string $upc = '';
 
+    public string $searchedUpc = '';
+
     public ?array $product = null;
 
     public string $newProductName = '';
@@ -96,6 +98,11 @@ class FindProducts extends Page
 
         $upc = trim($rawUpc);
 
+        // Clear the input so the next scan starts from a blank field, and force
+        // the browser to refocus/clear it even though it's still focused.
+        $this->copySourceUpc = '';
+        $this->dispatch('copy-source-upc-cleared');
+
         if (blank($upc)) {
             return;
         }
@@ -138,7 +145,7 @@ class FindProducts extends Page
         }
 
         session()->flash('sku_copy_data', [
-            'new_upc' => $this->upc,
+            'new_upc' => $this->searchedUpc,
             'fields' => $sku->only(array_diff($sku->getFillable(), ['item_number'])),
             'quantityPricing' => $sku->quantityPricing
                 ->map(fn ($qp) => ['quantity' => $qp->quantity, 'price' => $qp->price])
@@ -158,6 +165,13 @@ class FindProducts extends Page
         $this->notFound = false;
 
         $upc = trim($rawUpc);
+        $this->searchedUpc = $upc;
+
+        // Clear the input so the next scan starts from a blank field, and force
+        // the browser to refocus/clear it even though it's still focused (Livewire
+        // won't overwrite a focused input's value on its own).
+        $this->upc = '';
+        $this->dispatch('upc-cleared');
 
         if (blank($upc)) {
             return;
@@ -245,7 +259,7 @@ class FindProducts extends Page
                 ->danger()
                 ->send();
 
-            $this->performLookup($this->upc);
+            $this->performLookup($this->searchedUpc);
 
             return;
         }
@@ -256,6 +270,6 @@ class FindProducts extends Page
             ->success()
             ->send();
 
-        $this->performLookup($this->upc);
+        $this->performLookup($this->searchedUpc);
     }
 }
