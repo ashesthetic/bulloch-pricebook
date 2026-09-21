@@ -154,12 +154,32 @@
                 </div>
             @endif
 
-            <div class="mt-4 border-t border-gray-100 dark:border-white/10 pt-4">
+            <div class="mt-4 border-t border-gray-100 dark:border-white/10 pt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
                 <x-filament::link
                     :href="route('filament.admin.resources.skus.edit', ['record' => $product['item_number']])"
                     icon="heroicon-o-pencil-square"
                 >
                     Edit this SKU
+                </x-filament::link>
+
+                <x-filament::link
+                    tag="button"
+                    type="button"
+                    wire:click="addToPrintQueue"
+                    icon="heroicon-o-printer"
+                    color="success"
+                >
+                    Add to Print Queue
+                </x-filament::link>
+
+                <x-filament::link
+                    tag="button"
+                    type="button"
+                    wire:click="addToModifierQueue"
+                    icon="heroicon-o-pencil-square"
+                    color="warning"
+                >
+                    Add to Modifier Queue
                 </x-filament::link>
             </div>
 

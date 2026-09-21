@@ -2,8 +2,10 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\ModifierQueueItem;
 use App\Models\Pricebook\Sku;
 use App\Models\Pricebook\SkuUpc;
+use App\Models\PrintQueueItem;
 use App\Services\Pricebook\SkuFromSharedUpcCreator;
 use App\Support\UpcBarcode;
 use Filament\Notifications\Notification;
@@ -156,6 +158,40 @@ class FindProducts extends Page
         ]);
 
         $this->redirect(route('filament.admin.resources.skus.create'));
+    }
+
+    public function addToPrintQueue(): void
+    {
+        if ($this->product === null) {
+            return;
+        }
+
+        PrintQueueItem::firstOrCreate(
+            ['user_id' => auth()->id(), 'item_number' => $this->product['item_number']],
+            ['copies' => 1]
+        );
+
+        Notification::make()
+            ->title('Added to print queue')
+            ->success()
+            ->send();
+    }
+
+    public function addToModifierQueue(): void
+    {
+        if ($this->product === null) {
+            return;
+        }
+
+        ModifierQueueItem::firstOrCreate([
+            'user_id' => auth()->id(),
+            'item_number' => $this->product['item_number'],
+        ]);
+
+        Notification::make()
+            ->title('Added to modifier queue')
+            ->success()
+            ->send();
     }
 
     private function performLookup(string $rawUpc): void
