@@ -86,6 +86,27 @@
                 </div>
             </div>
 
+            <div class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-2">
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Department</p>
+                    <p class="text-sm font-medium text-gray-950 dark:text-white">
+                        {{ $product['department_number'] }}
+                        @if ($product['department_description'])
+                            &nbsp;&middot;&nbsp;{{ $product['department_description'] }}
+                        @endif
+                    </p>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Price Group</p>
+                    <p class="text-sm font-medium text-gray-950 dark:text-white">
+                        {{ $product['price_group_number'] }}
+                        @if ($product['price_group_description'])
+                            &nbsp;&middot;&nbsp;{{ $product['price_group_description'] }}
+                        @endif
+                    </p>
+                </div>
+            </div>
+
             <div class="mt-4 border-t border-gray-100 dark:border-white/10 pt-4">
                 <x-filament::link
                     :href="route('filament.admin.resources.skus.edit', ['record' => $product['item_number']])"
